@@ -1,0 +1,31 @@
+{
+  "name": "@intrust/canon",
+  "version": "0.1.0",
+  "description": "Shared UI/UX canon for Intrust apps — components, hooks, helpers, design tokens, and the canon docs that govern them.",
+  "license": "UNLICENSED",
+  "private": true,
+  "type": "module",
+  "main": "index.js",
+  "files": [
+    "components",
+    "lib",
+    "styles",
+    "memory",
+    "scripts"
+  ],
+  "exports": {
+    ".": "./index.js",
+    "./components/*": "./components/*",
+    "./lib/*": "./lib/*",
+    "./styles/*": "./styles/*"
+  },
+  "scripts": {
+    "sync-docs": "node scripts/sync-docs.js"
+  },
+  "peerDependencies": {
+    "react": "^18 || ^19",
+    "react-dom": "^18 || ^19",
+    "next": "^15 || ^16",
+    "tailwindcss": "^4"
+  }
+}
