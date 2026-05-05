@@ -52,7 +52,7 @@ const lines = [
   "# Canon (synced from @intrust/canon)",
   "",
   "Universal UI/UX canon — the rules every Intrust app follows. Edit upstream",
-  "in [intrust-it/intrust-canon](https://github.com/intrust-it/intrust-canon),",
+  "in [IntrustIT/intrust-canon](https://github.com/IntrustIT/intrust-canon),",
   "not here. This directory is regenerated on every `npm install`.",
   "",
   "## Files",
