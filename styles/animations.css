@@ -1,0 +1,54 @@
+/**
+ * Canonical animations used by canon components (Modal, SlideOverPanel,
+ * AlertBanner, etc.). Consumers import this file from their own globals.css:
+ *
+ *   @import "@intrust/canon/styles/animations.css";
+ *
+ * Don't replicate these animations in consumer globals — re-import.
+ */
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    max-height: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    max-height: 100px;
+    transform: translateY(0);
+  }
+}
+
+.animate-slideDown {
+  animation: slideDown 0.2s ease-out;
+}
+
+@keyframes slideInRight {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+.animate-slide-in-right {
+  animation: slideInRight 200ms ease-out forwards;
+}
+
+/* Reveal from the right edge without translating over whatever sits to the panel's right. */
+@keyframes revealFromRight {
+  from {
+    clip-path: inset(0 0 0 100%);
+    opacity: 0;
+  }
+  to {
+    clip-path: inset(0 0 0 0);
+    opacity: 1;
+  }
+}
+
+.animate-reveal-from-right {
+  animation: revealFromRight 180ms ease-out forwards;
+}

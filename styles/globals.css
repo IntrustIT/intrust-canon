@@ -1,4 +1,18 @@
+/**
+ * EXAMPLE consumer globals.css. Reference for what a new Intrust app's
+ * own app/globals.css can look like. Don't import THIS file directly —
+ * each consumer keeps its own globals (with its own theme tokens, font
+ * choices, etc.) and re-imports the canon's animations.
+ *
+ * Pattern:
+ *   @import "tailwindcss";
+ *   @import "@intrust/canon/styles/animations.css";
+ *
+ *   ... consumer's own :root / @theme inline / body styles ...
+ */
+
 @import "tailwindcss";
+@import "./animations.css";
 
 :root {
   --background: #ffffff;
@@ -12,56 +26,10 @@
   --font-mono: var(--font-geist-mono);
 }
 
-/* No dark mode — app is light-only */
+/* No dark mode — Intrust apps are light-only by default */
 
 body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
-}
-
-@keyframes slideDown {
-  from {
-    opacity: 0;
-    max-height: 0;
-    transform: translateY(-4px);
-  }
-  to {
-    opacity: 1;
-    max-height: 100px;
-    transform: translateY(0);
-  }
-}
-
-.animate-slideDown {
-  animation: slideDown 0.2s ease-out;
-}
-
-@keyframes slideInRight {
-  from {
-    transform: translateX(100%);
-  }
-  to {
-    transform: translateX(0);
-  }
-}
-
-.animate-slide-in-right {
-  animation: slideInRight 200ms ease-out forwards;
-}
-
-/* Reveal from the right edge without translating over whatever sits to the panel's right. */
-@keyframes revealFromRight {
-  from {
-    clip-path: inset(0 0 0 100%);
-    opacity: 0;
-  }
-  to {
-    clip-path: inset(0 0 0 0);
-    opacity: 1;
-  }
-}
-
-.animate-reveal-from-right {
-  animation: revealFromRight 180ms ease-out forwards;
 }
