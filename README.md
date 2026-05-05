@@ -1,21 +1,25 @@
 # @intrust/canon
 
-The shared UI/UX canon for every Intrust app. Components, hooks, helpers, design tokens, and the canon docs that govern them.
+The shared UI/UX canon for every Intrust app. **Guidance-only** — consumers install this as a `devDependency`; the canon **does not** ship runtime code.
 
-This is the **single source of truth** for how Intrust apps look, feel, and behave. Edit here, propagate to every consumer.
+## What this is
 
-## What's in here
+This repo holds the rules every Intrust app follows for UI/UX consistency:
 
-```
-components/   React/TypeScript components — every canonical primitive.
-              UserAvatar, SlideOverPanel, FilterToggle, SearchablePicker, etc.
-lib/          Hooks + helpers. format-due-date, confirmDestructive,
-              priority-colors, use-column-resize, etc.
-styles/       Brand tokens + globals.css.
-memory/       The canon docs themselves (.md). Synced into each consumer's
-              docs/canon/ via the postinstall script.
-scripts/      sync-docs.js — copies memory/*.md into consumer's docs/canon/.
-```
+- `memory/` — the **authoritative canon docs** (`.md`). These are the contract.
+- `components/`, `lib/`, `styles/` — **reference implementations** of the patterns the docs describe. Useful as concrete examples; **not imported at runtime**.
+- `scripts/sync-docs.js` — postinstall hook that copies `memory/*.md` into the consumer's `docs/canon/` so devs and Claude Code can read them right out of the project tree.
+
+## What this is NOT
+
+- Not a UI component library. Consumer apps **keep their own copies** of components in their own repos. They can match the canon exactly or diverge intentionally — drift is managed by Claude (or any human dev) reading the canon docs and applying them.
+- Not a runtime dependency. Adding `@intrust/canon` to `dependencies` (instead of `devDependencies`) is a signal that someone misunderstood the architecture.
+
+## Why guidance-only
+
+For a small portfolio of apps maintained by a small team + AI, a runtime shared package adds coupling and migration cost without paying off in safety. Each app owns its components and stays in canon-shape because the canon docs travel into every project's `docs/canon/` and Claude reads them before any UI work.
+
+If the portfolio grows past 3-4 apps with active independent development, revisit upgrading to a real `@intrust/ui` runtime package.
 
 ## Consuming this in an Intrust app
 
@@ -23,8 +27,8 @@ In the consumer's `package.json`:
 
 ```json
 {
-  "dependencies": {
-    "@intrust/canon": "github:intrust-it/intrust-canon#main"
+  "devDependencies": {
+    "@intrust/canon": "github:IntrustIT/intrust-canon#main"
   },
   "scripts": {
     "postinstall": "node node_modules/@intrust/canon/scripts/sync-docs.js"
@@ -32,32 +36,43 @@ In the consumer's `package.json`:
 }
 ```
 
+Add `docs/canon/` to `.gitignore` — it's always derived from the installed canon version.
+
 After `npm install`:
 
-- Components import via `@intrust/canon/components/UserAvatar` (etc.)
-- Hooks import via `@intrust/canon/lib/use-column-resize` (etc.)
-- Brand tokens via `@intrust/canon/styles/tokens`
-- The canon docs appear at `docs/canon/<file>.md` in the consumer (gitignored — always re-derived from the installed canon version)
+- `docs/canon/<file>.md` appears in the consumer
+- The consumer's `CLAUDE.md` should have a `## Canon` section pointing Claude at `docs/canon/`
 
-Pin to a specific commit for stability: `"github:intrust-it/intrust-canon#a1b2c3d"`.
+Pin to a specific commit when you don't want canon changes leaking into a sensitive consumer build: `"github:IntrustIT/intrust-canon#a1b2c3d"`.
 
-## How it relates to the three tiers of canon
+## Three tiers of canon (full picture)
 
-This repo holds **tier 1** — universal product canon that every Intrust app should follow.
+This repo holds **tier 1**:
 
-- **Tier 1 (here)** — universal UI/UX (this repo)
-- **Tier 2** — project-specific canon (lives in each app's repo, e.g. `intrust-os/docs/project-canon/`)
-- **Tier 3** — personal Claude Code methodology (lives in each developer's local Claude memory, never in any repo)
+- **Tier 1 (here)** — universal product canon. Applies to any Intrust app.
+- **Tier 2** — project-specific canon. Lives inside the project's repo (e.g. `intrust-os/docs/project-canon/`). Domain rules unique to one app — methodology, schema choices, integrations.
+- **Tier 3** — personal Claude Code methodology. Lives in each developer's local Claude memory at `~/.claude/projects/...`. Never goes into a repo.
 
-If you're tempted to add a domain-specific rule here (e.g. anything about scorecards, GGOB, meetings, EOS), it belongs in tier 2, not here.
+Future devs joining a project see tiers 1 + 2; they don't see anyone's tier 3.
 
 ## Workflow
 
-1. Notice a pattern that's worth canon-izing in the consumer app.
-2. Open a PR in this repo with the new component / helper / `.md` doc.
+1. Spot a pattern in a consumer worth canon-izing.
+2. PR to this repo: edit `memory/<doc>.md` and (optionally) update the reference impl in `components/` or `lib/`.
 3. Merge.
-4. In each consumer, `npm install` — the new canon flows in.
+4. In each consumer, `npm install` to refresh `docs/canon/`.
+5. If a consumer's local component drifts from the new canon, follow up in that consumer's repo.
 
-## Why no flat barrel
+## Layout
 
-`index.js` is a stub on purpose. Consumers import from sub-paths so tree-shaking stays tight. Don't add a barrel that imports every component.
+```
+intrust-canon/
+├── memory/        canon docs (.md) — THE contract
+├── components/    reference React/TS implementations of canon primitives
+├── lib/           reference helpers + hooks (formatDueDate, confirmDestructive, etc.)
+├── styles/
+│   ├── tokens.ts  brand color exports (#0069AA blue, #F58326 orange, etc.)
+│   └── globals.css
+└── scripts/
+    └── sync-docs.js   postinstall hook (consumers auto-run this)
+```
