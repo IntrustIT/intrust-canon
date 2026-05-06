@@ -177,22 +177,47 @@ Left-to-right columns in every row:
 - **Cursor:** `cursor-pointer` (whole row click-to-edit).
 - **Group class:** `group` (so child hover-revealed buttons can use `group-hover:`).
 
-### Left stripe — entity color + flagged promotion
+### Left stripe — see `reference_stripe_system.md` (v0.3.0)
 
-The colored left stripe is **part of the canonical row chrome** — every entity has one. It encodes both *what type of row this is* (color) and *whether the user has flagged it* (width promotion).
+The colored left stripe is part of the canonical row chrome — every entity has one. **As of v0.3.0, all stripe encoding lives in [`reference_stripe_system.md`](reference_stripe_system.md)** — that doc is the single source of truth for thickness (depth), hue (entity), and state (default / flagged / done) across every Intrust app. Read it before changing any stripe.
 
-| Entity | Default stripe | Tailwind |
-|---|---|---|
-| /issues | red 500 (2px) | `border-l-2 border-l-[#EF4444]` |
-| /todos | green 500 (2px) | `border-l-2 border-l-[#22C55E]` |
-| /rocks | indigo 500 (2px) | `border-l-2 border-l-[#6366F1]` |
-| /headlines | amber 500 (2px) | `border-l-2 border-l-[#F59E0B]` |
+Summary for OS quick-reference:
 
-**Flagged promotion** (uniform across all entities): when `isFlagged` is true, the stripe replaces the default with **brand-orange 4px** — `border-l-4 border-l-[#F58326]`. The wider 4px width gives flagged rows visual weight without needing a separate badge.
+| Entity | Depth | Thickness | Hue | CSS var |
+|---|---|---|---|---|
+| /issues | 1 | 8px | red `#EF4444` | `--color-stripe-issue` |
+| /todos | 1 | 8px | green `#22C55E` | `--color-stripe-todo` |
+| /rocks | 1 | 8px | indigo `#6366F1` | `--color-stripe-rock` |
+| Milestones (under Rocks) | 2 | 6px | indigo `#6366F1` (inherits parent) | `--color-stripe-rock` |
+| /headlines | 1 | 8px | amber `#F59E0B` | `--color-stripe-headline` |
 
-**Solved/done variant** (issues + todos): when `status === "solved"` (issues) or `completed === true` (todos), the stripe softens to `border-l-2 border-l-gray-300` to communicate "this is no longer active." Title gets `text-gray-400 line-through`, description gets `text-gray-300`.
+**Retired in v0.3.0:** Milestone teal `#14B8A6`. Milestones now inherit Rock's indigo and are distinguished by thickness (6px vs Rock's 8px). The parent/child relationship reads visually without a separate hue.
 
-**Composition pattern** — every list page builds a `stripeClass` const that picks one of the three modes (default / flagged / solved) per row, then concatenates it into the outer className. Reference impl: [`app/issues/page.tsx:1566`](app/issues/page.tsx:1566).
+**Stripe rendering** uses `box-shadow: inset` via the canon helper [`lib/stripes.ts`](../lib/stripes.ts) — single source of truth for the depth ladder, state-color overrides, and thickness rules. Old `border-l-2 border-l-[#HEX]` patterns retrofit to `style={stripeStyle({color, depth, state})}` incrementally; both render identically in light mode.
+
+**Flagged state** does NOT change the stripe color or thickness in v0.3.0 — entity hue and depth-thickness stay locked. The orange "flagged" signal is rendered as a separate outboard ribbon via [`<FlaggedTab/>`](../components/FlaggedTab.tsx) — a small 6px brand-orange tab sticking out to the LEFT of the rounded card. Stripe = identity (always); tab = state (only when flagged).
+
+**Done state** keeps the depth thickness but swaps stripe color to `gray-300` (`#D1D5DB` via `--color-gray-300`). Title gets `text-gray-400 line-through`, description gets `text-gray-300`. (Helper handles this when state="done".)
+
+**Composition pattern** — every list page builds rows like:
+
+```tsx
+<div className="relative">
+  {row.flagged && <FlaggedTab />}
+  <div
+    className="flex items-center gap-3 px-4 py-3 rounded-lg bg-white border border-gray-100 hover:bg-gray-50 cursor-pointer transition-colors group"
+    style={stripeStyle({
+      color: "var(--color-stripe-issue)",
+      depth: 1,
+      state: row.solved ? "done" : row.flagged ? "flagged" : "default",
+    })}
+  >
+    {/* row content */}
+  </div>
+</div>
+```
+
+The PARENT `<div className="relative">` is required for `<FlaggedTab/>` to position itself outside the rounded card. Reference impl will land in `app/issues/page.tsx` during the v0.3.0 retrofit sweep.
 
 ### Row gap — vertical rhythm between rows
 
@@ -310,17 +335,21 @@ Load once per issue-set change via a second `useEffect` keyed on `[issues]`; gra
 **Other notes:**
 - **Global ⌘K search ignores team scope entirely** (Ricky, 2026-04-25): always searches across everything the user has access to. Global team is a "what list do I default to" setting, not a global restriction.
 
-## Per-type colors
+## Per-type colors (v0.3.0)
 
-| Entity | Color | Hex |
-|---|---|---|
-| Issue | red-500 | `#EF4444` |
-| To-Do | green-500 | `#22C55E` |
-| Rock | indigo-500 | `#6366F1` (chose indigo over Intrust brand blue `#0069AA` because that blue is already the bulk-selected row highlight — indigo reads as distinct page identity) |
-| Headline | amber-500 | `#F59E0B` |
-| Milestone | teal-500 | `#14B8A6` |
+Stripe + h1-mark hues per OS entity. **All consumed via CSS var** (per `reference_color_palette.md` "CSS variables"). The thickness column comes from the depth-encoding system in [`reference_stripe_system.md`](reference_stripe_system.md).
 
-Used in two places: the h1 mark + the row left stripe.
+| Entity | Depth | Thickness | Hue | CSS var |
+|---|---|---|---|---|
+| Issue | 1 | 8px | red-500 `#EF4444` | `--color-stripe-issue` |
+| To-Do | 1 | 8px | green-500 `#22C55E` | `--color-stripe-todo` |
+| Rock | 1 | 8px | indigo-500 `#6366F1` | `--color-stripe-rock` |
+| Milestone | 2 | 6px | indigo-500 `#6366F1` (inherits Rock) | `--color-stripe-rock` |
+| Headline | 1 | 8px | amber-500 `#F59E0B` | `--color-stripe-headline` |
+
+**Retired in v0.3.0:** Milestone teal-500 `#14B8A6`. Milestones now inherit Rock's indigo and are distinguished from Rocks by thickness (6px vs 8px). Teal is now an unused hue — available for a future entity if needed.
+
+Used in two places: the h1 mark + the row left stripe (rendered via `box-shadow: inset` per `reference_stripe_system.md`).
 
 ## Per-list tweaks / decisions
 

@@ -38,6 +38,85 @@ Backgrounds: `bg-gray-50`, `bg-gray-100`, `bg-gray-200`. Borders: `border-gray-2
 
 Subtotal canon (per `reference_subtotal_metric.md`): `bg-gray-100` + dashed top border + `text-gray-700` + bold.
 
+## App brand accents (v0.3.0)
+
+Each Intrust app gets ONE per-app accent hue used for **identity surfaces** — the chrome that says "you are in app X." This sits alongside the universal brand-blue `#0069AA` (action color, all apps) and brand-orange `#F58326` (AI + flagged ribbon, all apps).
+
+| App | Accent | Hex | Status |
+|---|---|---|---|
+| OS (intrust-os) | indigo-500 | `#6366F1` | Active |
+| Playbook (intrust-lms) | sky-500 | `#0EA5E9` | Active |
+| Compass (planned) | emerald-500 | `#10B981` | Reserved |
+| App 4 (planned) | amber-500 | `#F59E0B` | Reserved |
+| App 5 (planned) | rose-500 | `#F43F5E` | Reserved |
+
+**≥60° hue separation between every neighbor** — pre-attentive distinction at a glance. New apps must pick from the reserved slots or propose a hue with the same separation rule.
+
+### Action zone vs identity zone
+
+The hard rule keeping app-accent and brand-blue from colliding:
+
+| Zone | Color | Where it shows up |
+|---|---|---|
+| **Action zone** | Brand-blue `#0069AA` (universal across all apps) | Primary CTAs (`+ Add X`), focus rings, sortable column hover, link colors, bulk-selected row outer border + ring, page-load spinners (functional progress signals). |
+| **Identity zone** | Per-app accent | Sidebar logo treatment, page H1 stripe-mark **on non-entity pages** (entity pages use the entity hue), splash screens, empty-state illustrations, top-bar tint. |
+
+**The two zones never overlap.** App-accent does NOT appear on buttons, focus rings, or selection rings. Brand-blue does NOT appear on identity surfaces. A user moving between OS and Playbook sees *the same button color* (familiarity) but *different surrounding chrome tint* (orientation: "I'm in Playbook now").
+
+**Spinners.** Page-load + save spinners stay brand-blue universally — they live in the action zone (response to a click). Brand-orange remains for AI flows only. App-accent does NOT replace functional spinner color.
+
+**H1 stripe-mark precedence.** On entity list pages, the H1 mark uses the entity hue (Issue page = red, Rock page = indigo, Course page = violet). On non-entity pages (`/dashboard`, `/admin/settings`, `/reports`, etc.), the H1 mark uses the app accent.
+
+---
+
+## CSS variables — Tailwind v4 @theme convention (v0.3.0)
+
+All stripe + brand colors are referenced via CSS custom property, never literal hex. Required for forward-compatible dark-mode work.
+
+```css
+@theme {
+  --color-brand-blue: #0069AA;
+  --color-brand-orange: #F58326;
+
+  --color-app-accent-os:       #6366F1;
+  --color-app-accent-playbook: #0EA5E9;
+
+  --color-stripe-issue:    #EF4444;
+  --color-stripe-todo:     #22C55E;
+  --color-stripe-rock:     #6366F1;
+  --color-stripe-headline: #F59E0B;
+  /* Milestone shares --color-stripe-rock — depth-2 inherits parent */
+
+  --color-stripe-course:               #8B5CF6;
+  --color-stripe-content-process:      #0EA5E9;
+  --color-stripe-content-guide:        #EAB308;
+  --color-stripe-content-policy:       #F43F5E;
+  --color-stripe-content-standard:     #D946EF;
+  --color-stripe-content-reference:    #64748B;
+  --color-stripe-enrollment:           #84CC16;
+}
+
+/* TODO: define .dark { --color-stripe-* } overrides when dark-mode lands.
+ * Each entity's dark-mode hex needs to be designed (not just shifted by
+ * one Tailwind tone) for AA contrast on dark surfaces. */
+```
+
+**Naming convention:** `--color-stripe-{entity-key}` for entity stripes, `--color-app-accent-{app}` for app accents, `--color-brand-{role}` for the universal brand tokens. Tailwind v4's `@theme` directive auto-generates utilities (`bg-stripe-issue`, `border-stripe-issue`) AND the raw CSS var, so both consumption paths work from one source of truth.
+
+**Migration policy.** v0.3.0 mandates the convention going forward. Existing OS code with hex literals (`bg-[#EF4444]`, `border-l-[#22C55E]`) renders identically in light mode, so the retrofit is safe to do incrementally. Light-mode rendering is unchanged.
+
+**Dark-mode scope.** v0.3.0 wraps stripe + brand colors only. Full dark-mode rollout (status colors / priority colors / team chips / gray-* utilities) is v0.4.0+.
+
+---
+
+## Retired colors
+
+| Color | Was used for | Retired in | Replaced by |
+|---|---|---|---|
+| teal-500 `#14B8A6` | Milestone entity stripe | v0.3.0 | Indigo at depth-2 (Milestone inherits Rock's hue, distinguished by thickness). Teal is now an unused hue available for future entities. |
+
+---
+
 ## What NOT to do
 
 - Don't introduce a new brand color. Only blue + orange. Period.

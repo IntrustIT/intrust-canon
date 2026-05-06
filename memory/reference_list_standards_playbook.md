@@ -12,56 +12,63 @@ When this doc and the OS doc disagree on the *shape* of a primitive (row chrome,
 
 ---
 
-## 1. Stripe — distinguishing non-OS rows from OS rows
+## 1. Stripe — see `reference_stripe_system.md` (v0.3.0)
 
-OS rows use a **2px solid** colored left border. Playbook rows use a **4px double** colored left border. Same hue-family system, different stripe shape — readable at a glance even when entities mix in one surface, and color-blind-accessible (pattern carries info too, not just hue).
+**v0.3.0 update:** the v0.2.0 "Playbook = 4px double" rule has been retired. All Intrust apps now use the same single-solid-stripe shape via `box-shadow: inset` — depth (thickness) and hue (entity) and state (color override) are the encoding axes, app distinction lives in **brand-accent chrome** (sidebar logo, H1 mark on non-entity pages), NOT stripe shape.
+
+Read [`reference_stripe_system.md`](reference_stripe_system.md) for the full spec — it's the single source of truth for stripe rendering across OS, Playbook, and future Intrust apps. Quick summary for Playbook:
+
+| Entity | Depth | Thickness | Hue (CSS var) |
+|---|---|---|---|
+| Series (top of Course family) | 1 | 8px | `--color-stripe-course` (violet `#8B5CF6`) |
+| Course | 2 | 6px | `--color-stripe-course` (inherits Series) |
+| Content — Process / Core Process / Procedure | 1 | 8px | `--color-stripe-content-process` (sky `#0EA5E9`) |
+| Content — Guide | 1 | 8px | `--color-stripe-content-guide` (yellow `#EAB308`) |
+| Content — Policy | 1 | 8px | `--color-stripe-content-policy` (rose `#F43F5E`) |
+| Content — Standard | 1 | 8px | `--color-stripe-content-standard` (fuchsia `#D946EF`) |
+| Content — Reference | 1 | 8px | `--color-stripe-content-reference` (slate `#64748B`) |
+| Enrollment | 1 | 8px | `--color-stripe-enrollment` (lime `#84CC16`) |
+| User · Team · Tag (admin tables) | — | no stripe | — |
+
+**Universal-row-consistency rule applies.** A Process renders at 8px sky everywhere it appears — on `/content`, listed as a course item, in search results, anywhere. Thickness is a fixed property of the entity type, not of where it's rendered. See `reference_stripe_system.md` §1 for the full doctrine.
+
+**Step is not a list-row.** Steps are inline children of Procedures (rendered by the structured-body editor as numbered substeps). They don't get a list-page treatment and don't get a stripe.
+
+**Composition pattern** — use the canon helper + flagged tab:
 
 ```tsx
-<div
-  className={`flex items-center gap-3 px-4 py-3 rounded-lg bg-white border hover:bg-gray-50 cursor-pointer transition-colors group ${
-    isBulkSelected ? "border-[#0069AA] ring-1 ring-[#0069AA]/30" : "border-gray-100"
-  } ${stripeClass}`}
->
-  {/* row content */}
+<div className="relative">
+  {row.flagged && <FlaggedTab />}
+  <div
+    className="flex items-center gap-3 px-4 py-3 rounded-lg bg-white border border-gray-100 hover:bg-gray-50 cursor-pointer transition-colors group"
+    style={stripeStyle({
+      color: "var(--color-stripe-content-process)",
+      depth: 1,
+      state: row.done ? "done" : row.flagged ? "flagged" : "default",
+    })}
+  >
+    {/* row content */}
+  </div>
 </div>
 ```
 
-The `stripeClass` is one of:
-
-| State | Class | Visual |
-|---|---|---|
-| **Default** | `border-l-[4px] [border-left-style:double] border-l-[#HEX]` | 4px double, entity color |
-| **Flagged** | `border-l-4 border-l-[#F58326]` | 4px solid brand-orange (matches OS universal flag-promotion) |
-| **Done** | `border-l-4 border-l-gray-300` | 4px solid gray (matches OS soft-done) |
-
-**Width is locked at 4px across all three states** so the row content never shifts horizontally as state changes. Pattern (double vs solid) plus color carry the signal.
-
-Tailwind doesn't have a per-side `border-double` utility; use the arbitrary `[border-left-style:double]` selector. The width must be explicitly set with `border-l-[4px]` (not `border-l-4`) when paired with the arbitrary style — Tailwind's prebuilt class won't override `border-style: double`'s default rendering at narrow widths.
-
-The full row outer chrome (padding, rounded, background, hover, cursor, group, bulk-selected ring) is identical to OS — see `reference_list_standards.md` "Row outer chrome — canonical."
+Helper at [`lib/stripes.ts`](../lib/stripes.ts), tab primitive at [`components/FlaggedTab.tsx`](../components/FlaggedTab.tsx). Copy both into your app per the @intrust/canon guidance-only model.
 
 ---
 
-## 2. Per-entity stripe colors
+## 2. Per-entity rules
 
-All Playbook stripe colors are deliberately **drawn from hues unused in OS** so a mixed surface (e.g. a future Rock+Course planning view) is unambiguous without reading labels. Issues = red, Todos = green, Rocks = indigo, Headlines = amber, Milestones = teal — those are off-limits here.
+The full hue table lives in §1. This section codifies the rules that aren't just "what color."
 
-| Entity | Color | Hex |
-|---|---|---|
-| Course | violet-500 | `#8B5CF6` |
-| Content — Process / Core Process / Procedure | sky-500 | `#0EA5E9` |
-| Content — Guide | yellow-500 | `#EAB308` |
-| Content — Policy | rose-500 | `#F43F5E` |
-| Content — Standard | fuchsia-500 | `#D946EF` |
-| Content — Reference | slate-500 | `#64748B` |
-| Enrollment | lime-500 | `#84CC16` |
-| User · Team · Tag (admin tables) | — | no stripe |
+**Hues drawn from outside the OS palette.** Issues = red, Todos = green, Rocks = indigo, Headlines = amber — those are off-limits for Playbook entities so a hypothetical mixed-OS+Playbook surface is unambiguous. The Playbook hues (violet / sky / yellow / rose / fuchsia / slate / lime) all stay >60° hue-separated from OS hues + brand-blue + brand-orange.
 
-**Enrollment stripe is fixed** (always lime), regardless of whether the enrollment is active / overdue / completed. Status is conveyed by the slot #6 status pill, not the stripe — this preserves the canon rule "stripe encodes entity *type*, not *state*." (Stripe state-shifts only happen for the universal flagged/done modes above.)
+**Collision audit (close-but-not-identical hues).** Yellow (Guide) ≈ Amber (Headline). Rose (Policy) ≈ Red (Issue). Lime (Enrollment) ≈ Green (Todo). **Accepted for now (Option B):** in any single Playbook surface today, you only see Playbook entities — internal distinction is what matters. **Reserved escalation (Option C):** if a mixed-OS+Playbook surface ever ships, switch Playbook entities to lightness-shifted variants in that surface. Codify the rule when needed; don't pre-engineer.
 
-**Admin tables get no stripe.** Users / Teams / Tags aren't entity-typed in the OS sense — they're administrative records. A stripe would imply they belong in the same visual category as Courses or Content; they don't. The list still uses the canonical row outer chrome, just without `border-l-*`.
+**Enrollment stripe is fixed** (always lime), regardless of whether the enrollment is active / overdue / completed. Status is conveyed by the slot #4 due-date pill, not the stripe — preserving the canon rule "stripe encodes entity *type*, not *state*." (Stripe state shifts to gray only when row is `done`, and row gets a `<FlaggedTab/>` only when row is `flagged` — see `reference_stripe_system.md` §3.)
 
-The h1 mark on each list page (`<span class="inline-block w-1 h-6 rounded-full bg-[#HEX]">`) uses the same color as the row stripe.
+**Admin tables get no stripe.** Users / Teams / Tags aren't entity-typed in the OS sense — they're administrative records. A stripe would imply they belong in the same visual category as Courses or Content; they don't. The list still uses the canonical row outer chrome, just with no `box-shadow: inset` stripe.
+
+**H1 stripe-mark.** On entity list pages (`/content`, `/courses`, `/enrollments`), the H1 mark uses the entity hue (matching the row stripe). On non-entity pages (`/admin/settings`, `/learn`, `/reports`), the H1 mark uses the **Playbook app accent** — sky `#0EA5E9` per `reference_color_palette.md` "App brand accents."
 
 ---
 
