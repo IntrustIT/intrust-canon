@@ -96,10 +96,59 @@ In order, left to right:
    - Three modes: **Visible** (client-side narrow over loaded rows, case-insensitive, all visible fields), **Anywhere** (server-side `?search=` with `mode: "insensitive"` across title + description), **By meaning** (POST to `/api/<entity>/ai-fuzzy-search`, Claude returns matching ids, client filters). `/meetings` only offers Visible + By meaning — no server `?search=` on that route.
    - **"By meaning" is the unified label across every search surface in every Intrust app** — list-page Find inputs AND ⌘K global search both use this same name (per [`reference_global_search.md`](reference_global_search.md)). Don't relabel as "Fuzzy", "Smart", or "AI Search" anywhere. Visual treatment (sparkle ✨ + brand-orange + `<AIContextInspector>` wrap) IS the AI signal; label stays user-intent.
    - Placeholder: `Find visible…` / `Find anywhere…` / `Find by meaning…`.
-   - Mode pill sits absolutely-positioned INSIDE the right edge of the input (`right-1`), styled via `className="!border-0 !bg-transparent !text-xs !px-2 !py-0.5 !text-gray-500 hover:!bg-gray-100 !rounded-md"` on the Popover trigger.
-   - Popover heading: **Find in** (not "Search mode"). Pill labels: **Visible / Anywhere / Meaning**.
-   - By-meaning fires on Enter. Small "Type your query … press Enter to match." hint shown inside the popover when by-meaning is selected. **Don't** render a separate "Run fuzzy match" button — it duplicates Enter.
-   - Any AI-semantic-using control (By meaning, plus any analysis button like Detect Patterns on /issues) wraps in `<AIContextInspector>`.
+   - **Mode-picker shape (v0.3.3 — replaces the old "pill labels" wording).** Trigger is a small borderless pill positioned absolutely INSIDE the right edge of the input (`right-1`). Click opens a Popover with the full mode list. Reference impl: `app/issues/page.tsx` (search the file for `"Find in"`).
+
+```tsx
+{/* Trigger pill — INSIDE the input, right edge */}
+<div className="absolute inset-y-0 right-1 flex items-center">
+  <Popover
+    align="right"
+    width={260}
+    className="!border-0 !bg-transparent !text-xs !px-2 !py-0.5 !text-gray-500 hover:!bg-gray-100 !rounded-md"
+    trigger={
+      <span className="font-medium">
+        {searchMode === "filter" ? "Visible" : searchMode === "deep" ? "Anywhere" : "Meaning"}
+      </span>
+    }
+  >
+    <div className="space-y-2">
+      <div className="text-[10px] font-semibold text-gray-500 uppercase mb-1">Find in</div>
+      {([
+        { v: "filter", label: "Visible",    help: "Instant narrow across visible fields" },
+        { v: "deep",   label: "Anywhere",   help: "Server search across title + description, all tabs" },
+        { v: "fuzzy",  label: "By meaning", help: "AI matches intent, not exact text" },
+      ] as const).map((m) => (
+        <label key={m.v} className="flex items-start gap-2 cursor-pointer rounded-md px-2 py-1.5 hover:bg-gray-50">
+          <input type="radio" name="searchMode" className="mt-1"
+            checked={searchMode === m.v}
+            onChange={() => setSearchMode(m.v)} />
+          <span className="flex-1">
+            <span className="block text-xs font-medium text-gray-800">
+              {m.label}
+              {m.v === "fuzzy" && <span className="ml-1 text-[10px] text-[#F58326]">AI</span>}
+            </span>
+            <span className="block text-[10px] text-gray-500">{m.help}</span>
+          </span>
+        </label>
+      ))}
+      {searchMode === "fuzzy" && (
+        <AIContextInspector feature="<your-feature>" description="…">
+          <p className="text-[10px] text-gray-500 px-2 py-1">
+            Type your query in the search box + <span className="font-medium text-gray-700">press Enter</span> to match.
+          </p>
+        </AIContextInspector>
+      )}
+    </div>
+  </Popover>
+</div>
+```
+
+   - **Radios with subtitle help text — NOT segmented pills.** Each option has a bold label + `text-[10px] text-gray-500` help line. By-meaning gets a small `text-[10px] text-[#F58326]` "AI" tag inline next to its label — that's the AI signal in addition to the inspector wrap.
+   - **Popover heading:** `text-[10px] font-semibold text-gray-500 uppercase` reading **"Find in"** (not "Search mode", not "Mode").
+   - **Trigger pill text:** the short form of the active mode (`Visible` / `Anywhere` / `Meaning`). The full label "By meaning" appears in the popover; the trigger uses the one-word form to fit inside the input.
+   - **Placeholder:** `Find visible…` / `Find anywhere…` / `Find by meaning…` (changes with mode).
+   - **By-meaning fires on Enter** in the input itself. The hint inside the popover ("Type your query in the search box + press Enter to match.") wraps in `<AIContextInspector>` so right-click reveals what context the AI uses. **Don't** render a separate "Run fuzzy match" button — it duplicates Enter.
+   - **Any analysis button** that lives inside this popover (e.g. "Detect Patterns" on `/issues`) sits in its OWN section below the mode list, separated by `pt-2 mt-2 border-t border-gray-100` and a `text-[10px] font-semibold text-gray-500 uppercase` "Analysis" heading. Each analysis button wraps in its own `<AIContextInspector>`.
 4. **Clear** button to the RIGHT of the Find input. Only renders when anything is non-default. `resetView()` clears: filters, search query + mode, grouping + collapsed-groups, bulk selection, Row-3 state tab, per-page team override. Preserves view mode + sort preference + Row-1 category tab. **The Clear condition must include the state-tab check** — if the user only deviated by switching the Row-3 tab, Clear still needs to show.
 5. **Active filter chips** (`components/FilterChip.tsx`) — rendered rightmost, after Clear. Click × to clear. Wrap into a second row when the window is narrow.
 
@@ -107,7 +156,26 @@ In order, left to right:
 
 Directly above the list body, below the filters row, separated by a `border-b border-gray-200` rail. Always three buckets for state: **All / <Open> / <Done>**. The *Done* tab uses the entity's "finished" word (Unresolved/Resolved on /issues, Not Done/Done on /todos, Active/Completed on /rocks when we add it, etc.).
 
-- Each tab shows a count: `Label <span>N</span>`. Counts are computed over the sorted+filtered set BEFORE the state-tab narrows, so each tab advertises how many items it would display.
+- Each tab shows a count: `Label <span>N</span>` per the **Count chip canon** below. Counts are computed over the sorted+filtered set BEFORE the state-tab narrows, so each tab advertises how many items it would display.
+
+### Count chip — inline numeric badges
+
+Small numeric badge sitting next to a label (state tabs, hub tabs, row titles with substep counts, sidebar nav items with notification counts).
+
+**Style — locked:**
+```tsx
+<span>{label} <span className="text-gray-400 font-normal">{count}</span></span>
+```
+
+- The label keeps its parent's font weight (`font-medium` on tabs, `font-bold` on H1s, etc.).
+- The count is **always** `text-gray-400 font-normal` — visually subordinate to the label so the eye reads the label first, the count second.
+- Single space between label and count. No parens, no brackets, no slash.
+- **NOT a separate primitive component.** Just an inline `<span>` — using a heavier wrapper (badge component, pill) over-emphasizes the count.
+
+**When to use a stronger pill instead** (gray-100 bg, gray-700 text, rounded):
+- Counts inside ROW content where the row already has its own visual weight (e.g. an item count next to a row title that needs to be tappable or visually distinct from surrounding text). Use sparingly — most counts are fine inline.
+
+**Off-canon:** floating bubble badges (red dots with numbers), pill-shaped colored badges (`bg-blue-100 text-blue-700`), or any treatment that makes the count compete for visual weight with the label. The label is what the user reads; the count is supplementary.
 - Default tab is the "Open" bucket (Unresolved on /issues, Not Done on /todos) — the list is focused on open work by default.
 - Active tab uses `border-b-2 border-[#0069AA] text-gray-900`; inactive uses `border-transparent text-gray-500`.
 - Reset: Clear button snaps back to the default "Open" tab.
