@@ -1,0 +1,150 @@
+---
+name: Entity action set
+description: Single source of truth for entity actions (Edit / Ask Rickety / Spawn linked / Flag / Delete / etc.) that appear in BOTH right-click ContextMenu (on rows) AND Kebab menus (in slide-over headers). lib/entity-actions.ts owns the canonical ContextMenuItem[] per entity type. Inside-editor kebab filters out "Ask Rickety" + "Open Details" (already accessible from the body).
+type: reference
+---
+
+# Entity action set
+
+Every entity (Issue / Todo / Rock / Headline / Metric / Course / Content / etc.) has one canonical action list — used in two surfaces:
+
+| Surface | When | Primitive |
+|---|---|---|
+| **Right-click on a row** in a list page | Always | `<ContextMenu items={ctxItems} />` |
+| **Kebab menu in a slide-over header** | Edit mode | `<KebabMenu items={ctxItems.filter(insideEditorFilter)} />` |
+
+The same `ContextMenuItem[]` drives both. Single source of truth: `lib/entity-actions.ts`.
+
+---
+
+## 1. Canonical builder pattern
+
+```ts
+// lib/entity-actions.ts
+import type { ContextMenuItem } from "@/components/ContextMenu";
+import { LINKED_SPAWN_ICON } from "@/lib/icons";
+
+export function buildIssueActions(args: {
+  issue: Issue;
+  onAskRickety: () => void;
+  onOpenDetails: () => void;
+  onSpawn: (type: "todo" | "rock" | "headline") => void;
+  onFlag: () => void;
+  onArchive: () => void;
+  onDelete: () => void;
+}): ContextMenuItem[] {
+  return [
+    { label: "Open Details", icon: "📋", onClick: args.onOpenDetails },
+    { label: "Ask Rickety", icon: "✨", onClick: args.onAskRickety },
+    { divider: true },
+    { label: "Spawn To-Do",   icon: LINKED_SPAWN_ICON, onClick: () => args.onSpawn("todo") },
+    { label: "Spawn Rock",    icon: LINKED_SPAWN_ICON, onClick: () => args.onSpawn("rock") },
+    { label: "Promote to Headline", icon: LINKED_SPAWN_ICON, onClick: () => args.onSpawn("headline") },
+    { divider: true },
+    { label: args.issue.flagged ? "Unflag" : "Flag", icon: "🚩", onClick: args.onFlag },
+    { divider: true },
+    { label: args.issue.archived ? "Unarchive" : "Archive", onClick: args.onArchive },
+    { label: "Delete permanently", icon: "🗑", onClick: args.onDelete, destructive: true },
+  ];
+}
+```
+
+- **One builder per entity type:** `buildIssueActions`, `buildTodoActions`, `buildRockActions`, `buildHeadlineActions`. New entities (Metric, Course, Content) follow the same shape.
+- **Builder takes the entity + every action callback** as a single args object. The caller (page or editor) wires the callbacks; the builder doesn't know about state.
+- **Icons** come from [`reference_icon_vocabulary.md`](reference_icon_vocabulary.md). Use the canonical glyph (📋 details, ✨ AI, 🚩 flag, 🗑 delete, `LINKED_SPAWN_ICON` for spawn).
+- **Dividers** group related actions (open/AI, spawn, state, destructive). 4 groups max — more is noise.
+- **Destructive items** flag with `destructive: true` — `<ContextMenu>` and `<KebabMenu>` both render the item in red.
+
+---
+
+## 2. Inside-editor kebab filter
+
+When the action set renders in the slide-over header (kebab menu), filter out actions that the panel body already provides:
+
+```ts
+const insideEditorFilter = (i: ContextMenuItem) =>
+  i.label !== "Ask Rickety" &&        // body has <RicketyChat>
+  i.label !== "Open Details";          // already in details
+
+<KebabMenu items={ctxItems.filter(insideEditorFilter)} />
+```
+
+Why filter:
+- **"Open Details"** in the kebab is a no-op — you ARE in details.
+- **"Ask Rickety"** in the kebab leads to the same Rickety the panel body has built-in. Two entry points to the same surface = ambiguity.
+
+Keep all other items (spawn, flag, archive, delete) — they're meaningful inside the editor.
+
+**Recommended extraction:** `lib/entity-actions.ts` exports a `filterKebabItems(items)` helper so every editor uses the same filter without copy-pasting the predicate.
+
+---
+
+## 3. Pages and editors NEVER hand-roll action items
+
+If a page or editor needs an entity action, it goes through the builder. Don't copy-paste a single `<ContextMenuItem>` inline.
+
+Off-canon (DON'T do this):
+```tsx
+// Headlines page today — bespoke "+ To-Do" / "+ Issue" buttons in the slide-over
+<button onClick={() => createTodoFromHeadline()}>+ To-Do</button>
+<button onClick={() => createIssueFromHeadline()}>+ Issue</button>
+```
+
+Canon — same outcome via the action builder + stacked editor:
+```tsx
+const ctxItems = buildHeadlineActions({
+  headline,
+  onSpawn: (type) => setStackedEditor({ type, mode: "create", prefill: ... }),
+  // …
+});
+<KebabMenu items={ctxItems.filter(insideEditorFilter)} />
+```
+
+The user discovers spawn-Todo via the same kebab path as on the row's right-click. One mental model, one entry point per surface.
+
+---
+
+## 4. Adding a new action
+
+To add (e.g.) "Convert to Idea" to Issues:
+
+1. Add the action to `buildIssueActions` with the right icon, label, and callback shape.
+2. The `ContextMenu` (row right-click) picks it up automatically.
+3. The kebab in the slide-over picks it up automatically (unless you also need to add it to the inside-editor filter).
+4. Update [`reference_icon_vocabulary.md`](reference_icon_vocabulary.md) if you need a new icon.
+
+Don't add it inline in one page and forget the others.
+
+---
+
+## 5. Required actions per entity (universal)
+
+Every entity action set MUST include:
+
+- **Open Details** (filtered out inside the editor)
+- **Ask Rickety** (filtered out inside the editor)
+- **Flag / Unflag** (toggles `flagged` state)
+- **Archive / Unarchive** (toggles `archived` state, when entity supports archiving)
+- **Delete permanently** (destructive, last)
+
+Optional based on entity:
+- **Spawn linked** (To-Do / Rock / Headline / etc. depending on what links the entity supports)
+- **Convert to** (Issue → Rock promotion, Idea → Issue/Todo/Rock conversion, etc.)
+- **Entity-specific** (Issues: "Detect Patterns"; Rocks: "View milestones"; etc.)
+
+Order in the list:
+1. Open / Ask (top — most common entry)
+2. Spawn / Convert (sub-entity creation)
+3. Flag / Unflag (state attribute)
+4. Archive / Delete (state lifecycle, destructive last)
+
+Dividers between groups.
+
+---
+
+## See also
+
+- [`reference_icon_vocabulary.md`](reference_icon_vocabulary.md) — canonical glyphs for action icons.
+- [`reference_stacked_editor_pattern.md`](reference_stacked_editor_pattern.md) — what spawn callbacks do (open inner editor, defer DB write).
+- [`reference_shared_components.md`](reference_shared_components.md) — ContextMenu + KebabMenu primitives.
+- [`reference_confirm_dialog.md`](reference_confirm_dialog.md) — Delete permanently goes through `confirmDestructive`.

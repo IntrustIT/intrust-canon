@@ -54,10 +54,55 @@ These primitives exist. Before inventing a new alert/confirm/textarea/picker, ch
 
 ## Editor pattern conventions
 
-Detail panel editors (Rock/Issue/Todo) share a common skeleton:
-- `SlideOverPanel` with `leading={<StatusPicker .../>}` for state + actions, `subtitle={<>team · owner · due/quarter/priority</>}`.
-- Body starts with Rickety chat, then urgency banner (Todo), then Description (GrowTextarea), then specific fields, then Attachments + ActivityTrail.
-- Footer = Cancel + Save only. Archive + Delete live inside the StatusPicker dropdown.
-- `onSaved` (closes panel + refreshes) is distinct from `onListRefresh` (just refreshes, keeps panel open). CommentThread's `onMarkedRead` wires to `onListRefresh` so the bubble count clears without collapsing the editor.
+Detail panel editors (Rock/Issue/Todo/Headline/Metric) share a common skeleton.
 
-When adding a new detail panel, match this skeleton — don't roll your own header, footer, or urgency banner styling.
+### Slide-over header — 4-slot contract (v0.3.8)
+
+| Slot | Required content | Notes |
+|---|---|---|
+| `leading` | `<StatusPicker>` with status options + `actions=[Archive, Delete permanently]` | The StatusPicker dropdown is the canonical home for destructive actions. NEVER render destructive icons in the footer. Headlines (which have no editable status) may omit the StatusPicker entirely — but then Archive/Delete live ONLY in the kebab. |
+| `titlePrefix` | `<>{TypeName} {<PinToggle/>} {optional read-only badge}</>` | TypeName is the entity (e.g. "Rock", "Issue"). PinToggle is the click-to-pin star. Read-only badge appears when entity is system-locked. |
+| (title) | autosaving inline-edit input | Already canonical; see SlideOverPanel `title` prop. |
+| `subtitle` | `team · owner · due/quarter/priority` chip row | Use `<TeamChip>` + `<UserAvatar size="xs" role="...">` + `formatDueDate` (per `reference_date_format.md`) + `<PriorityPicker variant="chip">`. Don't hand-roll the row — extract `<EditorSubtitle>` if you find yourself copy-pasting. |
+| `headerExtra` | `<KebabMenu items={ctxItems.filter(insideEditorFilter)} />` | Same `lib/entity-actions.ts` builder used by row right-click. Filter out "Ask Rickety" + "Open Details" (per `reference_entity_action_set.md`). |
+
+### Body order (top to bottom)
+
+1. Rickety chat (when entity has it)
+2. Urgency banner (Todo only — when due-soon or overdue)
+3. Description (`<GrowTextarea>`)
+4. Entity-specific fields
+5. Linked items (`<LinkedItemsSection>`)
+6. Attachments (`<FileAttachments>`)
+7. ActivityTrail (when entity has one)
+
+If body grows beyond ~one screen, see [`reference_panel_body_tabs.md`](reference_panel_body_tabs.md) — workflow-phase tabs are canon, form-chunking tabs aren't.
+
+### Footer — Cancel + Save only (v0.3.8)
+
+| Mode | Cancel button (left) | Primary button (right) |
+|---|---|---|
+| Create | `Cancel` | `Create {EntityName}` (e.g. "Create Issue", "Create To-Do") |
+| Edit | `Cancel` | `Save & Close` with `<Check className="w-3 h-3" />` icon |
+
+- **Brand-blue primary button:** `px-4 py-2 rounded-lg bg-[#0069AA] text-white text-sm font-medium`.
+- **Cancel button:** `px-4 py-2 rounded-lg text-gray-600 hover:bg-gray-100 text-sm font-medium`. NEVER red — Cancel isn't destructive, it's a state-change.
+- **No "Done" buttons.** "Done" is ambiguous (saved? discarded? both?). Always Cancel + Save & Close.
+- **No bare "Create" without entity name.** "Create Issue" reads as a verb; "Create" alone reads as an icon.
+- **Save & Close** uses the check icon (✓) Lucide `Check`. NEVER native checkmark Unicode.
+- **No destructive icons in the footer.** Archive + Delete permanently live in the StatusPicker dropdown (per slot-1 contract above).
+
+### Close-path dirty guard (v0.3.8)
+
+Esc, backdrop click, X button, and Cancel all check the `isDirty` flag and prompt via `confirmAction({title:"Discard unsaved changes?"})` when dirty. See [`reference_unsaved_changes_guard.md`](reference_unsaved_changes_guard.md). Currently NOT implemented in any OS editor — tracked on the punchlist.
+
+### Save callbacks
+
+`onSaved` (closes panel + refreshes) is distinct from `onListRefresh` (just refreshes, keeps panel open). CommentThread's `onMarkedRead` wires to `onListRefresh` so the bubble count clears without collapsing the editor.
+
+When adding a new detail panel, match this skeleton — don't roll your own header, footer, urgency banner, or destructive-action placement.
+
+### Recommended primitives to extract (not yet shipped)
+
+- **`<EditorSubtitle>`** — the team/owner/due-date chip row that lives in the SlideOverPanel `subtitle` slot. Currently hand-rolled in 3+ editors; extracting eliminates drift.
+- **`<PendingLinkPreview parentType={...} parentId={...} />`** — the dashed-border row showing "this create flow will link to {parent} once saved." Currently duplicated as `IssuePendingLinkPreview` / `PendingLinkPreview` inner components; promote to shared.
