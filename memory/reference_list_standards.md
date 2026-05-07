@@ -91,7 +91,60 @@ Both column-header cells (in Band 4) AND row cells (Band 5) use the same alignme
 
 In order, left to right:
 1. **View ▾ popover** (`components/Popover.tsx`) — contains: Layout picker (list / compact), Sort by (entity-specific keys), Group by (None / Team / Owner / ...per list).
-2. **Filters ▾ popover** with a filter-count badge. Fields appropriate to the entity + **tri-state Archive picker** (Active / Both / Archived — default Active, three-pill segmented control in its own section) + entity-specific "Show <done-state>" toggle (e.g. "Show solved" on /issues, default off) + "Clear all filters" button when any are active.
+2. **Filters ▾ popover** with a filter-count badge. Width `280`. Fields appropriate to the entity + **tri-state Archive picker** (Active / Both / Archived — default Active, three-pill segmented control in its own section) + entity-specific "Show <done-state>" toggle (e.g. "Show solved" on /issues, default off) + "Clear all filters" button when any are active.
+
+   **Field shapes — pick by selection cardinality:**
+
+   | Filter type | Shape | Example |
+   |---|---|---|
+   | **Single-select** (one value, e.g. one team, one status, one owner) | `<select>` dropdown | Raised by ▾ / Status ▾ / Team ▾ |
+   | **Multi-select** (multiple values, e.g. multiple categories, multiple types) | **Checkbox list with optional section heading** (v0.3.4) | Categories ☐ / Types ☐ |
+   | **Boolean toggle** | `<FilterToggle>` stacked, full-width | Private only / Stractical only / Include Direct Reports |
+   | **Tri-state scope** (3 mutually exclusive options) | Segmented pill group (`flex gap-1 bg-gray-100 rounded-md p-0.5`) | Archive Active/Both/Archived |
+
+   **Single-select shape:**
+   ```tsx
+   <div>
+     <label className="block text-[10px] font-semibold text-gray-500 uppercase mb-1">Status</label>
+     <select className="w-full border border-gray-200 rounded-md px-2 py-1.5 text-xs bg-white"
+             value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
+       <option value="">Any</option>
+       {STATUS_OPTIONS.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
+     </select>
+   </div>
+   ```
+
+   **Multi-select shape (v0.3.4 canon):**
+   ```tsx
+   <div>
+     <label className="block text-[10px] font-semibold text-gray-500 uppercase mb-1">Type</label>
+     <div className="space-y-0.5">
+       {TYPE_OPTIONS.map((t) => (
+         <label key={t.value} className="flex items-center gap-2 cursor-pointer rounded-md px-2 py-1.5 hover:bg-gray-50">
+           <input type="checkbox"
+                  checked={selectedTypes.has(t.value)}
+                  onChange={(e) => toggleType(t.value, e.target.checked)}
+                  className="w-4 h-4 rounded border-gray-300 text-[#0069AA] focus:ring-[#0069AA]/20" />
+           <span className="text-xs text-gray-700">{t.label}</span>
+         </label>
+       ))}
+     </div>
+   </div>
+   ```
+
+   - **Section headings** (`text-[10px] font-semibold text-gray-500 uppercase mb-1`) above each group separate logical filter dimensions (e.g. CATEGORY then TYPE in Playbook `/content`).
+   - Multiple multi-select sections in one popover are stacked with `space-y-3` between sections (matching the global popover stack rhythm).
+   - Each option row: `flex items-center gap-2 cursor-pointer rounded-md px-2 py-1.5 hover:bg-gray-50`. Don't use bare checkboxes — the row hover affordance helps tappability.
+   - Checkbox color uses brand-blue (`text-[#0069AA]`) for the checked state. Focus ring brand-blue at 20%.
+   - **For long lists** (>10 options), add a small inline search above the checkbox list — same `<input>` shape as the OS Find input, scoped to filter the visible options.
+   - Don't mix shapes inside one section — a section is either single-select OR multi-select OR toggles, not a mix.
+
+   **Required sections in every Filters popover, regardless of entity:**
+   - Tri-state Archive picker (segmented pills, in its own section under `border-t border-gray-100 pt-2`).
+   - "Clear all filters" button below archive when `activeFilters > 0`.
+   - Filter-count badge on the trigger when any filter is non-default: `<span className="ml-1 inline-flex items-center justify-center min-w-4 h-4 px-1 rounded-full bg-[#0069AA] text-white text-[10px] font-bold">{count}</span>`.
+
+   **Reference impl:** [`app/issues/page.tsx`](app/issues/page.tsx) — search for `>Filters<`.
 3. **Find input** with inline mode picker:
    - Three modes: **Visible** (client-side narrow over loaded rows, case-insensitive, all visible fields), **Anywhere** (server-side `?search=` with `mode: "insensitive"` across title + description), **By meaning** (POST to `/api/<entity>/ai-fuzzy-search`, Claude returns matching ids, client filters). `/meetings` only offers Visible + By meaning — no server `?search=` on that route.
    - **"By meaning" is the unified label across every search surface in every Intrust app** — list-page Find inputs AND ⌘K global search both use this same name (per [`reference_global_search.md`](reference_global_search.md)). Don't relabel as "Fuzzy", "Smart", or "AI Search" anywhere. Visual treatment (sparkle ✨ + brand-orange + `<AIContextInspector>` wrap) IS the AI signal; label stays user-intent.
