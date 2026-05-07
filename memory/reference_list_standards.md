@@ -28,13 +28,16 @@
 
 **Action-cluster order in Band 1 (right-to-left as they appear on screen):** primary CTA (`+ Add <Entity>`) is rightmost → AI button(s) → archive-done icon → RefreshButton → optional kebab. This puts the most-clicked button at the easiest-to-reach edge.
 
-**Sort lives on column headers — period.** All sort affordance is `<SortHeader>` cells in Band 4. **No separate Sort dropdown today** (Ricky 2026-05-08: clickable column headers are the universal pattern; if a field can't be a column header, sortability for it isn't worth the chrome). If a useful sort field doesn't have a visible column today, either:
-- Add a visible column for it, OR
-- Drop that sort option (the user almost never wanted it anyway).
+**Sort placement — dual-path canon (v0.3.6, reconciled).**
 
-`/meetings` historically had a separate `Sort ▾` popover for Type / Status / Rating / Duration sorts. Killed in this canon — date + title become column headers; the other fields stop being sortable.
+OS reality (verified `app/issues/page.tsx`): both paths exist and stay in sync.
 
-**If a Sort dropdown ever returns** (Ricky 2026-05-08 placement decision): the Sort ▾ popover goes inline in **Band 2 alongside View / Filters / Find** — same visual treatment as those Band-2 controls (`text-xs font-medium text-gray-600 inline-flex items-center gap-1.5`), positioned to the LEFT of Find. Never on its own band, never floating off to the right.
+1. **Primary picker — inside View ▾ popover.** "Sort by" is a sibling section to Layout and Group by, rendered as a segmented-pill group with directional indicator (↑/↓ on the active option). Discoverable for fields that aren't visible columns.
+2. **Direct manipulation — column header click.** `<SortHeader>` cells in Band 4 toggle sort on click. Same underlying state as the View popover.
+
+Both paths update one shared sort state — flipping in either surface reflects immediately in the other. The View popover sort is canon for ANY sortable field; column headers are canon for sortable VISIBLE columns. Don't omit either path: discoverable picker + direct manipulation both serve users.
+
+`/meetings` table layout has no Band 4 strip; the Sort by section in View ▾ is the only path there. That's by design, not a partial implementation.
 
 **Sticky top section.** Bands 1-4 are **sticky to the viewport top** so filters / search / Add / state tabs / column headers stay reachable regardless of scroll position. Status (session 49 commits `d80728c` + `f68929a`): Bands 1-3 sticky on all 5 list pages; Band 4 sticky on /issues + /todos + /headlines + /rocks (list view). /rocks list view used to host its column header inside the `ListView` sub-component with a local `useTableSort`; both the hook and the `STATUS_ORDER` constant were hoisted to `RocksPage` / module scope respectively, with `tableSort` threaded back into `ListView` as a prop. /rocks milestone-class views (milestones, gantt, planner) still use per-group card-wrapped headers — separate refactor when those need sticky. /meetings has no Band 4 strip (table layout).
 
@@ -203,7 +206,20 @@ In order, left to right:
    - **By-meaning fires on Enter** in the input itself. The hint inside the popover ("Type your query in the search box + press Enter to match.") wraps in `<AIContextInspector>` so right-click reveals what context the AI uses. **Don't** render a separate "Run fuzzy match" button — it duplicates Enter.
    - **Any analysis button** that lives inside this popover (e.g. "Detect Patterns" on `/issues`) sits in its OWN section below the mode list, separated by `pt-2 mt-2 border-t border-gray-100` and a `text-[10px] font-semibold text-gray-500 uppercase` "Analysis" heading. Each analysis button wraps in its own `<AIContextInspector>`.
 4. **Clear** button to the RIGHT of the Find input. Only renders when anything is non-default. `resetView()` clears: filters, search query + mode, grouping + collapsed-groups, bulk selection, Row-3 state tab, per-page team override. Preserves view mode + sort preference + Row-1 category tab. **The Clear condition must include the state-tab check** — if the user only deviated by switching the Row-3 tab, Clear still needs to show.
-5. **Active filter chips** (`components/FilterChip.tsx`) — rendered rightmost, after Clear. Click × to clear. Wrap into a second row when the window is narrow.
+5. **Active filter chips** (`components/FilterChip.tsx`) — rendered rightmost, after Clear. Click × to clear.
+
+   **Wrap geometry (v0.3.6):** the entire Band 2 row uses `flex flex-wrap items-center gap-2` so chips break to the next line **at whatever indent the flex layout produces** — not flush-left full-width, not right-aligned hanging. Whatever doesn't fit wraps naturally. No special second-row container, no manual indent. This matches OS production today.
+
+   ```tsx
+   {/* Band 2 — locked container shape */}
+   <div className="flex flex-wrap items-center gap-2 mb-3">
+     <ViewPopover />
+     <FiltersPopover />
+     <FindInput />
+     {anyChange && <ClearButton />}
+     {chips.map((c) => <FilterChip key={c.key} {...c} />)}
+   </div>
+   ```
 
 ## Row 3 — state tabs (All / "Open-state" / "Done-state") with per-tab counts
 
