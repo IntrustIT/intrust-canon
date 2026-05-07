@@ -102,22 +102,54 @@ Locked details:
 
 ---
 
-## Two valid sub-shapes
+## Two valid library types — DIFFERENT post-pick surfaces (v0.3.7)
 
-The picker handles two semantically different libraries with the same UI shape:
+The trigger button + inline-expand row list is identical between library types. **What happens after a row click is NOT.** Two distinct mental models, two distinct rendered surfaces:
 
-### A. Free-form template
-- Click on a row **fills** the entity fields with template values.
-- All fields remain **editable** — the template is a starting point.
-- Example: KPI Templates today. User picks "MRR Growth %", form fills with name/unit/period defaults, user is free to rename, change unit, etc.
+### Type A — Suggestion library (e.g. CEO KPI Templates)
 
-### B. System-defined stub
-- Click on a row **fills** the entity fields with catalog values.
-- System-owned fields **lock** (read-only, `bg-gray-50`, with a Lucide-Lock chip explaining why) — see [`reference_locked_system_metric.md`](reference_locked_system_metric.md) (tier-2, OS-specific today).
-- Editable fields (owner, subject, description) stay free.
-- Example: Halo Portfolio stubs (CSM, AE, Other). The catalog defines name/unit/period/autoSource immutably; the user picks an owner + portfolio subject.
+The library is a **shortcut to a manual entry.** The user is creating a free-form metric; the template just saves typing.
 
-The **trigger button + expand pattern is identical** between the two sub-shapes. The behavioral difference is what the template *applies* — free-form copies values, system stub copies values + locks them.
+- Row click **fills the full entity form** with template values.
+- All fields stay **editable** — the user can rename, change unit, change period.
+- The slide-over panel continues to show the full create form.
+- A free-form metric can be created any number of times from the same template (no "All added" semantics).
+- **Examples:** "MRR Growth %", "CSAT Score", "Sales Pipeline Velocity" — generic CEO/exec suggestions.
+
+### Type B — Programmed picker (e.g. Halo Portfolio Library)
+
+The library is a **catalog of system-managed slots.** The user is *instantiating a programmed slot*, not filling out a form. The metric IS the catalog entry; the user just picks which subject/owner to attach.
+
+- Row click **transforms the panel content** to a minimal slot-instantiation form. **The full create form is replaced**, not gray-locked.
+- The minimal form shows ONLY user-chosen fields:
+  - Slot summary at the top (slot name + description + agreement-type tag, presented as informational text — not as input fields).
+  - Owner select (required).
+  - Subject select (required — typically a `<SearchablePicker>` for CSM/AE unum).
+  - Group select (optional, where on the scorecard).
+  - Goal input (optional, target value).
+- Submit button is labeled with what's about to happen — e.g. `Add Trevor Phipps' MRR to scorecard`.
+- **Each programmed slot can be instantiated AT MOST ONCE per (subject, owner) pair.** Already-instantiated rows in the picker show an `All added` tag (or similar) and can't be re-picked. This is a key differentiator from Type A.
+- **No lock chip, no gray-50 fields, no full form with most things uneditable.** The visual model is "you picked a programmed slot; tell us who/where; done." Lock-chip pattern in [`reference_locked_system_metric.md`](reference_locked_system_metric.md) applies ONLY to **editing an existing programmed metric** (post-create, e.g. via the row's right-click → Edit), not the create flow.
+- **Examples:** Halo Portfolio CC-MRR per CSM, EC-Block-Drain per AE.
+
+### Why the split
+
+Putting both library types into one form-with-grayed-locks pattern creates friction for the programmed case:
+- The locked fields look broken (why are these grayed out?).
+- The lock chip explains why, but the user wasn't trying to fill those fields — the field rendering is wasted ink.
+- Mental model collision: "am I creating a metric, or selecting a programmed slot?"
+
+Splitting them respects the different intents:
+- Type A: "I want to create a metric. Suggest me one." → form-fill.
+- Type B: "I want to attach a programmed metric. Pick which one." → slot-instantiation.
+
+### Catalog content separation
+
+Type A and Type B have **different catalog sources**, never mixed:
+- Type A library content = generic suggestions (e.g. exec-curated KPI templates). User-editable in catalog files.
+- Type B library content = programmed slots tied to real data sources (Halo, GGOB, etc.) with `autoSource` defined.
+
+If a row in a Type A library shows an agreement-type tag like "CompleteCare" or has an "All added" indicator, the catalog content is in the wrong library — that's a data bug, not a canon question.
 
 ---
 
