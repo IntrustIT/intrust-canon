@@ -1,12 +1,14 @@
 ---
 name: Global search canon
-description: Tier-1 spec for the ⌘K-triggered global search bar present in every Intrust app's top shell. Covers trigger + placement, visual shape (search input + Include-archive switch + Mode bar with Exact / Fuzzy AI toggle), dropdown anatomy (active results, archived divider, dimmed archived rows), result-row contract per entity, keyboard map, debounce timings, the API contract, scope rule (ignores team scope), and the AI fuzzy mode wired through AIContextInspector.
+description: Tier-1 spec for the ⌘K-triggered global search bar present in every Intrust app's top shell. Covers trigger + placement, visual shape (search input + Include-archive switch + Mode bar with Exact / By meaning toggle), dropdown anatomy (active results, archived divider, dimmed archived rows), result-row contract per entity, keyboard map, debounce timings, the API contract, scope rule (ignores team scope), and the By-meaning AI mode wired through AIContextInspector. "By meaning" is the unified label across global search AND list-page Find inputs — same concept, same name everywhere.
 type: reference
 ---
 
 # Global search canon
 
-Every Intrust app has the same `⌘K` global search in its top shell. Same trigger, same visual shape, same archive switch, same AI fuzzy mode, same result-row contract. Cross-app users move between OS and Playbook and never relearn search.
+Every Intrust app has the same `⌘K` global search in its top shell. Same trigger, same visual shape, same archive switch, same By-meaning AI mode, same result-row contract. Cross-app users move between OS and Playbook and never relearn search.
+
+> **Mode-name canon (v0.3.2):** "By meaning" is the **unified label** for AI-expanded semantic search across every Intrust surface. List-page Find inputs (Band 2 of [`reference_list_standards.md`](reference_list_standards.md)) and global ⌘K search both use the same label. The visual treatment (sparkle ✨ + brand-orange + `<AIContextInspector>` wrap) IS the AI signal — the label stays user-intent-describing ("By meaning"), not implementation-describing ("Fuzzy / AI / Smart"). Same concept, same name, every surface.
 
 Reference implementations: [`components/GlobalSearch.tsx`](../components/GlobalSearch.tsx) and [`components/Highlight.tsx`](../components/Highlight.tsx) — copy into your app per the @intrust/canon guidance-only model.
 
@@ -90,9 +92,9 @@ The dropdown has two horizontal regions: the **mode bar** (top, fixed) and the *
 
 ---
 
-## 5. Mode bar — Exact / Fuzzy (AI)
+## 5. Mode bar — Exact / By meaning
 
-Lives at the top of the dropdown. Two toggles in a tiny pill group + the variants readout when fuzzy is active.
+Lives at the top of the dropdown. Two toggles in a tiny pill group + the variants readout when By meaning is active.
 
 ```tsx
 <div className="flex items-center gap-2 px-4 py-2 bg-gray-50 border-b border-gray-100 text-[11px] text-gray-600">
@@ -108,7 +110,7 @@ Lives at the top of the dropdown. Two toggles in a tiny pill group + the variant
     </button>
     <AIContextInspector
       feature="search"
-      description="Fuzzy: Rickety expands your query with related terms and synonyms before searching (e.g. 'shipping' also matches 'delivery', 'freight'). Uses the same text index as Exact — just adds more candidate phrases. Temperature 0 for the expansion step."
+      description="By meaning: Rickety expands your query with related terms and synonyms before searching (e.g. 'shipping' also matches 'delivery', 'freight'). Uses the same text index as Exact — just adds more candidate phrases. Temperature 0 for the expansion step."
     >
       <button
         onClick={() => setSmartSearch(true)}
@@ -117,7 +119,7 @@ Lives at the top of the dropdown. Two toggles in a tiny pill group + the variant
         }`}
       >
         <span>✨</span>
-        Fuzzy (AI)
+        By meaning
       </button>
     </AIContextInspector>
   </div>
@@ -130,9 +132,10 @@ Lives at the top of the dropdown. Two toggles in a tiny pill group + the variant
 ```
 
 Rules:
-- **Exact mode = brand-blue** when active. Fuzzy = brand-orange when active. Action zone vs AI zone (per [`reference_color_palette.md`](reference_color_palette.md)).
-- **Fuzzy button MUST wrap in [`<AIContextInspector feature="search">`](reference_ai_context_inspector.md)** — right-click reveals what context the synonym-expansion step uses + lets the user toggle sources.
-- **Variants readout:** when fuzzy is on AND the AI added synonyms beyond the literal query, render the extras inline ("Also matched: shipping, freight"). `text-[10px] text-gray-400 italic ml-auto`.
+- **Exact mode = brand-blue** when active. By meaning = brand-orange when active. Action zone vs AI zone (per [`reference_color_palette.md`](reference_color_palette.md)).
+- **By meaning button MUST wrap in [`<AIContextInspector feature="search">`](reference_ai_context_inspector.md)** — right-click reveals what context the synonym-expansion step uses + lets the user toggle sources.
+- **Variants readout:** when By meaning is on AND the AI added synonyms beyond the literal query, render the extras inline ("Also matched: shipping, freight"). `text-[10px] text-gray-400 italic ml-auto`.
+- **Label is locked at "By meaning."** Do not localize to "Fuzzy", "Smart", "AI Search", etc. The unified mode-name canon is established in §intro.
 - **Switching modes re-runs search immediately** if a query is present.
 
 ---
@@ -163,7 +166,7 @@ const archived = results.filter((r) => r.archived);
 ))}
 ```
 
-**Loading:** `<div className="px-4 py-3 text-sm text-gray-400">{smartSearch ? "✨ Thinking…" : "Searching…"}</div>`.
+**Loading:** `<div className="px-4 py-3 text-sm text-gray-400">{smartSearch ? "✨ Thinking…" : "Searching…"}</div>`. The internal state variable `smartSearch` is implementation; the user-facing label remains "By meaning."
 
 **No results:** `<div className="px-4 py-3 text-sm text-gray-400">No results for "{query}"</div>`. Use Unicode curly quotes `&ldquo;` `&rdquo;`.
 
@@ -267,7 +270,7 @@ Active-row index resets to `-1` on every query change so arrow-down lands on the
 ## 9. Debounce + re-run rules
 
 - **Exact mode debounce:** 250ms after last keystroke.
-- **Fuzzy mode debounce:** 500ms (slower because the AI expansion step adds latency anyway).
+- **By-meaning mode debounce:** 500ms (slower because the AI expansion step adds latency anyway).
 - **Toggle re-run:** flipping `smartSearch` or `includeArchived` while a query is present re-runs immediately, no debounce.
 - **Below 2 chars:** no API call. Results clear.
 
@@ -290,7 +293,7 @@ Response:
 ```ts
 {
   results: SearchResult[];   // see §7
-  variants: string[];        // [originalQuery, ...synonyms]; length 1 when not fuzzy
+  variants: string[];        // [originalQuery, ...synonyms]; length 1 when not in By-meaning mode
 }
 ```
 
@@ -311,7 +314,7 @@ Reference: [`app/api/search/route.ts`](app/api/search/route.ts) (OS) for the end
 4. Define your app's `SearchResultType` union, `TYPE_LABELS`, and `TYPE_COLORS` maps. Pull colors from your entity stripe hues at the 100/700 step.
 5. Implement `GET /api/search` matching §10. Server returns `{ results, variants }` per the contract.
 6. Implement the server-side `search<App>()` function: text search across your entities, returns `SearchResult[]`. Honor `includeArchived` and `smart`.
-7. For fuzzy mode: pipe `query` through your AI client at `feature="search"` to get synonym variants, then run the same text search across the union of variants. Set `variants` in the response to `[query, ...synonyms]`.
+7. For By-meaning mode: pipe `query` through your AI client at `feature="search"` to get synonym variants, then run the same text search across the union of variants. Set `variants` in the response to `[query, ...synonyms]`.
 8. Confirm `<AIContextInspector feature="search">` is wired so users can see + toggle what context the synonym-expansion step uses (per [`reference_ai_context_inspector.md`](reference_ai_context_inspector.md)).
 9. Verify keyboard map works (⌘K, arrows, Enter, Escape).
 10. Verify the include-archive toggle re-runs search immediately when flipped while a query is present.
@@ -324,6 +327,6 @@ Search is the single most-used cross-app surface — every user reaches for ⌘K
 
 Pair with:
 - [`reference_filter_toggle_convention.md`](reference_filter_toggle_convention.md) — the iOS-switch shape used by Include-archive.
-- [`reference_ai_context_inspector.md`](reference_ai_context_inspector.md) — the inspector that wraps the Fuzzy (AI) button.
+- [`reference_ai_context_inspector.md`](reference_ai_context_inspector.md) — the inspector that wraps the By meaning button.
 - [`reference_color_palette.md`](reference_color_palette.md) — brand-blue (Exact) vs brand-orange (Fuzzy) zone separation.
 - [`reference_icon_library.md`](reference_icon_library.md) — Lucide `Search` for the input glyph; ⌘ Unicode for the keybind hint.
