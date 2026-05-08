@@ -229,11 +229,28 @@ In order, left to right:
    </div>
    ```
 
-## Row 3 — state tabs (All / "Open-state" / "Done-state") with per-tab counts
+## Row 3 — state tabs ordered most-used → least-used (v0.3.10)
 
-Directly above the list body, below the filters row, separated by a `border-b border-gray-200` rail. Always three buckets for state: **All / <Open> / <Done>**. The *Done* tab uses the entity's "finished" word (Unresolved/Resolved on /issues, Not Done/Done on /todos, Active/Completed on /rocks when we add it, etc.).
+Directly above the list body, below the filters row, separated by a `border-b border-gray-200` rail. **Three buckets in most-used → least-used order.** The "most-used" bucket is whichever the user reaches for most often given the entity's daily workflow — usually the open/active state, but it varies.
 
-- Each tab shows a count: `Label <span>N</span>` per the **Count chip canon** below. Counts are computed over the sorted+filtered set BEFORE the state-tab narrows, so each tab advertises how many items it would display.
+OS shipping order (verified):
+
+| Page | Tab order | Most-used (default) |
+|---|---|---|
+| `/issues` | Unresolved · Resolved · All | Unresolved |
+| `/todos` | Not Done · Done · All | Not Done |
+| `/rocks` | Active · Completed · All (when added) | Active |
+| `/headlines` | (today: single list — no state tabs) | n/a |
+
+**The "Done" tab uses the entity's finished word** (Unresolved/Resolved on /issues, Not Done/Done on /todos, Active/Completed on /rocks).
+
+**The "All" bucket goes LAST** because it's the rare overview. Don't put All first.
+
+**Default tab is the most-used bucket** — list opens focused on whatever the user reaches for most. Right edge of the page, leftmost tab, default state-tab — all align.
+
+**Role-aware default override is acceptable when an entity has fundamentally different user types** with different "most-used" buckets. Example: Playbook Content has editors (most-used = Published — curating the catalog) vs learners (most-used = Published — consuming finished content; learner may not even see In Progress). Codify the role-aware default in tier-2 canon for that app; the universal canon stays "most-used → least-used."
+
+**Each tab shows a count:** `Label <span>N</span>` per the **Count chip canon** below. Counts are computed over the sorted+filtered set BEFORE the state-tab narrows, so each tab advertises how many items it would display.
 
 ### Count chip — inline numeric badges
 
