@@ -28,16 +28,24 @@
 
 **Action-cluster order in Band 1 (right-to-left as they appear on screen):** primary CTA (`+ Add <Entity>`) is rightmost → AI button(s) → archive-done icon → RefreshButton → optional kebab. This puts the most-clicked button at the easiest-to-reach edge.
 
-**Sort placement — dual-path canon (v0.3.6, reconciled).**
+**Sort placement — column-header-primary, View ▾ as fallback only (v0.3.9, tightened).**
 
-OS reality (verified `app/issues/page.tsx`): both paths exist and stay in sync.
+Column-header click is **THE** primary sort path. The View ▾ Sort by section is a **fallback** that earns its keep ONLY when column-header sort isn't available — never as a redundant duplicate.
 
-1. **Primary picker — inside View ▾ popover.** "Sort by" is a sibling section to Layout and Group by, rendered as a segmented-pill group with directional indicator (↑/↓ on the active option). Discoverable for fields that aren't visible columns.
-2. **Direct manipulation — column header click.** `<SortHeader>` cells in Band 4 toggle sort on click. Same underlying state as the View popover.
+| Context | Sort path |
+|---|---|
+| **List view with `<SortHeader>` Band 4 strip** | Column-header click ONLY. NO Sort by section in View ▾. |
+| **Compact view** (no column-header strip rendered) | Sort by section in View ▾. |
+| **Table-layout pages without `<SortHeader>` (e.g. `/meetings`)** | Sort by section in View ▾. |
+| **Sort by a field that isn't a visible column on this page** | Either add it as a column, or expose it via View ▾ Sort by. Don't ship the field as sortable through neither path. |
 
-Both paths update one shared sort state — flipping in either surface reflects immediately in the other. The View popover sort is canon for ANY sortable field; column headers are canon for sortable VISIBLE columns. Don't omit either path: discoverable picker + direct manipulation both serve users.
+When BOTH paths are present (e.g. an app that lets users toggle list ↔ compact in the same session), they share one underlying `useTableSort` state — flipping in either surface reflects in the other.
 
-`/meetings` table layout has no Band 4 strip; the Sort by section in View ▾ is the only path there. That's by design, not a partial implementation.
+**Why column-header-primary:** column headers are discoverable (hover affordance), direct (click the thing you want to sort by), and visible-state (the active sort indicator sits ON the column). View ▾ Sort by is overhead — opens a popover, picks the field name, closes — for a sort the user could do with a single click on a header that's already on screen.
+
+**Anti-pattern:** Sort by section in View ▾ alongside `<SortHeader>` columns covering the same fields. Two paths to the same outcome forces the user to learn that "yes, both work" and adds drift risk (the popover and headers can disagree if state isn't shared correctly).
+
+**OS today (off-canon):** `app/issues/page.tsx:1104-1115` ships a Sort by section in View ▾ alongside `<SortHeader>` Priority + Age columns. The Sort by section is redundant on list view; should be removed for list view, kept for compact view. Tracked on #565.
 
 **Sticky top section.** Bands 1-4 are **sticky to the viewport top** so filters / search / Add / state tabs / column headers stay reachable regardless of scroll position. Status (session 49 commits `d80728c` + `f68929a`): Bands 1-3 sticky on all 5 list pages; Band 4 sticky on /issues + /todos + /headlines + /rocks (list view). /rocks list view used to host its column header inside the `ListView` sub-component with a local `useTableSort`; both the hook and the `STATUS_ORDER` constant were hoisted to `RocksPage` / module scope respectively, with `tableSort` threaded back into `ListView` as a prop. /rocks milestone-class views (milestones, gantt, planner) still use per-group card-wrapped headers — separate refactor when those need sticky. /meetings has no Band 4 strip (table layout).
 
