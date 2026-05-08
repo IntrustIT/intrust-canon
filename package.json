@@ -1,6 +1,6 @@
 {
   "name": "@intrust/canon",
-  "version": "0.3.11",
+  "version": "0.3.12",
   "description": "Guidance-only UI/UX canon for Intrust apps. Consumers install as a devDependency; the postinstall hook syncs canon docs into the consumer's docs/canon/ for Claude Code + dev reference. Components and lib files are REFERENCE implementations — consumers do not import from this package at runtime.",
   "license": "UNLICENSED",
   "private": true,
