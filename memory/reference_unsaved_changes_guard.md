@@ -1,14 +1,16 @@
 ---
 name: Unsaved-changes guard
-description: Slide-over editors must warn before discarding unsaved drafts. Esc / backdrop-click / Cancel all check for dirty state and prompt via confirmAction. Required when AI-generated content or significant manual input is at risk of silent loss. Code-level implementation tracked separately on the OS punchlist.
+description: Slide-over editors must warn before discarding unsaved drafts. SUPERSEDED in v0.4.0 by feedback_unsaved_guard_semantics.md — Cancel now bypasses the prompt (explicit-abandon path) while X / Esc / backdrop still prompt (accidental-dismiss paths). This doc retained for historical reference.
 type: reference
 ---
 
 # Unsaved-changes guard
 
-When a slide-over editor is **dirty** (any field changed from initial state, or any AI-generated draft sits in the body), closing the panel must NOT silently discard the draft. The user gets one confirmation before losing work.
+> ⚠ **SUPERSEDED by `feedback_unsaved_guard_semantics.md` (v0.3.17, locked v0.4.0).** This doc preserves the original v0.3.8 contract for reference, but the **active canon** is the feedback doc. Key change: **Cancel bypasses the prompt** (it's an explicit abandon intent) while X / Esc / backdrop still check `isDirty` and prompt. Init effects MUST reset `dirtyRef = false` to avoid stale-dirty bugs on fresh-mount editors. See the feedback doc for the canonical implementation pattern.
 
-> **Status (v0.3.8):** This is the canonical contract. **Implementation is currently missing across all OS editors** — Esc, backdrop click, and explicit Cancel all silent-discard today. Tracked on the punchlist (#565 sub-item). Document the canon now so retrofit lands consistent.
+When a slide-over editor is **dirty** (any field changed from initial state, or any AI-generated draft sits in the body), closing the panel must NOT silently discard the draft. The user gets one confirmation before losing work — but only on accidental-dismissal paths, not on the explicit Cancel button.
+
+> **Status (v0.3.8 → v0.4.0):** Original doc said all four close paths prompt. v0.3.17 split that rule: Cancel bypasses, others prompt. /todos TodoDetailEditor is the v0.4.0 conformant pilot; other editors (Issue / Rock / Headline / Measurable) retrofit via #565.
 
 ---
 
