@@ -18,13 +18,14 @@ This pairs with [`<UserAvatar role="...">`](reference_user_avatar.md) on the dis
 
 ```tsx
 <UserPicker
-  role="Owner"                 // canonical role label per reference_canonical_role_labels.md
+  role="Responsible"             // canonical role label per feedback_canonical_role_labels.md (v0.4.0)
   value={ownerId}
   onChange={setOwnerId}
-  users={users}                // pre-loaded user list, optional team-scoped
-  teamId={currentTeamId}        // optional — pre-filter to team members + leadership
-  allowUnassigned={true}        // shows "Unassigned" as the first option
-  allowMe={true}                // surfaces current user at top under "You" header
+  users={users}                  // pre-loaded user list, optional team-scoped
+  teamId={currentTeamId}         // optional — pre-filter to team members + leadership
+  allowUnassigned={true}         // shows "Unassigned" as the first option
+  allowMe={true}                 // surfaces current user at top under "You" header
+  align="left"                   // optional, default "left" — forwards to SearchablePicker (see v0.3.16)
   disabled={false}
   required={true}                // adds visual asterisk + integrates with form validation
 />
@@ -44,18 +45,21 @@ Locked behavior:
 
 ## 2. Role prop — required in contextual surfaces
 
-`role` is required in any user-pick surface where the meaning of the picked user matters — same list as [`<UserAvatar>`](reference_user_avatar.md):
+`role` is required in any user-pick surface where the meaning of the picked user matters — same list as [`<UserAvatar>`](reference_user_avatar.md). v0.4.0 canon:
 
 | Entity | role |
 |---|---|
+| Rock / Todo / Metric / Mini-game | `"Responsible"` |
+| Milestone | `"Delegated to"` |
+| Todo (recipient slot) | `"Due to"` |
 | Issue | `"Raised by"` |
-| Todo | `"Assigned to"` |
 | Headline | `"Shared by"` |
-| Rock / Metric / Mini-game | `"Owner"` |
 | Meeting attendee | `"Attendee"` |
 | Generic person reference | `"User"` (fallback only) |
 
-Per [`reference_canonical_role_labels.md`](feedback_canonical_role_labels.md). The role appears in the popover's heading and as the field's label.
+Per [`feedback_canonical_role_labels.md`](feedback_canonical_role_labels.md). The role appears in the popover's heading and as the field's label.
+
+**Legacy values** `"Owner"` and `"Assigned to"` remain in the union for one sweep cycle (per UserAvatar canon). New code MUST use the v0.4.0 labels above.
 
 ---
 
@@ -134,11 +138,28 @@ If you're tempted to use a native `<select>` for "convenience," the answer is no
 
 ---
 
-## 7. Reference impl status (v0.3.8)
+## 7. `align` prop — forward to SearchablePicker
 
-The `<UserPicker>` component does NOT exist in OS code yet. Canon documents the target shape; OS retrofit (#565) will implement it by wrapping `<SearchablePicker>` with the role-prop + grouping logic above. Until built, OS owner/assignee fields stay as native selects — known divergence, tracked.
+`<UserPicker>` forwards `align="left" | "right"` (default `"left"`) to the underlying `<SearchablePicker>`. Pass `align="right"` for any picker in the right column of a multi-column form or near a slide-over body's right edge.
 
-When implemented, copy the component into canon `components/UserPicker.tsx` as a guidance-only reference impl per the @intrust/canon model.
+**Reason (v0.3.16 canon — see `reference_searchable_picker.md`).** Slide-over bodies use `overflow-y: auto`, which silently promotes `overflow-x` to `auto` (CSS spec gotcha). A wide popover overflowing the right edge of the trigger triggers horizontal scroll on the slide-over body, visibly shifting the editor. `align="right"` anchors the popover to the trigger's right edge and extends left — no overflow.
+
+```tsx
+// Right-column responsible field → anchor popover right edge
+<UserPicker
+  role="Responsible"
+  value={ownerId}
+  onChange={setOwnerId}
+  users={users}
+  align="right"
+/>
+```
+
+## 8. Reference impl status
+
+`<UserPicker>` ships in `components/UserPicker.tsx` (s61, branch `claude/jolly-galileo-bf31d7`). Pilot consumers: `TodoDetailEditor` Responsible field (team-scoped) + Due-to-person field (`allowUnassigned`, full user list).
+
+Cross-app sweep target — punchlist #565(f) — wraps Issue / Rock / Metric editor Responsible fields with `<UserPicker>`, replacing native `<select>` callsites.
 
 ---
 

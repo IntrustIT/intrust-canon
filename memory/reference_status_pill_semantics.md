@@ -150,8 +150,12 @@ Canonical color/glyph table (the 13 seeded teams):
 <TeamChip team={team} onClick={fn} /> // interactive (becomes a button)
 ```
 
-**Visual: avatar shape, mirrors `<UserAvatar>`.**
-- Solid team-color circle (Leadership = brand-blue, Growth = brand-amber, etc.)
+**Shape rule (v0.3.15 locked, v0.4.0 prop-removal):** Team chip is **always rounded-square**. Person avatar is **always circle**. Shape encodes type — no exceptions, no context-dependent variants. The earlier `shape="circle" | "square"` API is retired: **`<TeamChip>` no longer accepts a `shape` prop in v0.4.0.** All callsites drop the prop in the cross-app sweep — see field-note D3 for the grep recipe. Private-scope chip (Lock glyph on neutral bg) also uses rounded-square; anything that isn't a person is rounded-square.
+
+**v0.4.0 sweep target:** `app/todos/page.tsx` has 4 `shape="square"` callsites today (the prop is currently a no-op default but explicit pass remains). Sweep removes them as part of #775 / cross-app cleanup. Net behavior unchanged; net code: cleaner, prop-free.
+
+**Visual: rounded-square avatar.**
+- Solid team-color rounded-square (Leadership = brand-blue, Growth = brand-amber, etc.)
 - White Users icon centered (the "this is a team" anchor — `User` instead of `Users` for one-on-one teams)
 - Small white circle in the bottom-right corner with the team's glyph in the team color (Crown for Leadership, DollarSign for Growth, Heart for Client Success, Shield for Security Practice, Sparkles for AI Practice, etc.) — the **glyph supplements the Users icon, never replaces it**
 - Initiative teams: dashed ring around the circle (signals transient)

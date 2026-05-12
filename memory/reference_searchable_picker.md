@@ -8,18 +8,47 @@ originSessionId: f3055e97-3818-4a61-bef4-8209cd87b3a7
 
 `components/SearchablePicker.tsx` is the canonical "pick from many" form-input picker. Established #551 (formula slot picker — 45 metrics across 5 groups, owner-disambiguated names). Reuse via the `<SearchablePicker>` component; do not roll new dropdown logic.
 
-## When to use
+## When to use — the threshold rule (v0.3.14, canon-locked)
 
-- Option count is large (≥ ~10) AND text-based search would help
-- Options need **multi-line** display (primary label + secondary metadata, e.g. owner)
-- Options need **group headers** to cluster by scope/category
-- Options benefit from **icon decoration** (avatar, glyph) inline
+**Use `<SearchablePicker>` (or its `<UserPicker>` / other typed wrapper) whenever ANY of these are true:**
 
-## When NOT to use
+1. **Option count ≥ 10.** Hard threshold. At 10+ items, a visible search box + anywhere-substring match is faster than scanning. No native `<select>` for lists this size.
+2. **Options reference a real-world entity** (user, team, rock, milestone, metric, course, etc.) — regardless of count. Entity lists grow over time; what's 6 today is 30 in a year. Pick once, scale forever.
+3. **Options need multi-line display** (primary label + secondary metadata, e.g. owner, role, team).
+4. **Options need group headers** to cluster by scope/category.
+5. **Options benefit from icon decoration** (avatar, glyph) inline.
 
-- Small fixed-option pickers (status, priority, indicator type) — use the existing dedicated pickers (`<StatusPicker>`, `<PriorityPicker>`).
-- Native `<select>` + `<optgroup>` is fine for ~5–10 options where label alone disambiguates.
-- Cases that genuinely need a multi-select are out of scope for v1 (this picker is single-value).
+When any rule fires, the picker:
+- Renders a visible autofocused search input at the top
+- Matches anywhere-substring across `label + sublabel + group + searchTokens` (case-insensitive)
+- Supports ↑↓ Enter Esc keyboard nav
+
+## When NOT to use — native `<select>` is fine
+
+Native `<select>` (or a sibling small-fixed-option picker like `<StatusPicker>` / `<PriorityPicker>`) is correct ONLY when ALL of these are true:
+
+- ≤ 9 options
+- Options are a **fixed, closed set** that won't grow (weekday, layout mode, recurrence frequency, yes/no/maybe)
+- Options are NOT entity references
+- Label alone disambiguates (no metadata needed)
+
+Examples that stay native: recurrence frequency (5 options), weekday (7), layout mode (2), Modal layout (3).
+
+Examples that MUST be SearchablePicker even though they're small today: user pickers, team pickers, rock/milestone/metric pickers — anything pointing at a row in a DB table that grows.
+
+## Alignment rule (v0.3.16, canon-locked 2026-05-11)
+
+`<SearchablePicker>` has an `align="left" | "right"` prop (default `"left"`), mirroring `<Popover>`. The panel anchors to that edge of the trigger.
+
+**Rule:** pickers sitting in the right column of a multi-column form (or anywhere near a container's right edge) MUST pass `align="right"`. The panel then extends left into the form area instead of overflowing the container.
+
+**Why:** slide-over panels use `overflow-y: auto`, which silently promotes `overflow-x` from `visible` to `auto` (CSS spec gotcha). A wide popover overflowing the right edge of a slide-over triggers horizontal scroll on the slide-over body — the whole editor visibly shifts when the picker opens. `align="right"` fixes it by keeping the panel inside the container.
+
+`<UserPicker>` forwards the same prop. Future typed picker wrappers should too.
+
+## Threshold rationale
+
+10 is the convention used across Material Design (autocomplete-over-select guidance), Polaris, and most modern enterprise UIs. Below 10, scanning beats searching. At 10+, search box pays for itself on the first miss. Bundling the "always-search for entity lists" rule ensures consistency as data grows — a 6-user picker that grows to 70 doesn't silently degrade UX.
 
 ## API
 

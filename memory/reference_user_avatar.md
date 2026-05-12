@@ -40,18 +40,20 @@ import UserAvatar from "@/components/UserAvatar";
 
 Per `feedback_canonical_role_labels.md`, every avatar in a contextual surface (anywhere the user has a relationship to the entity being shown) MUST include a `role` prop. The role becomes a tooltip prefix that makes the avatar self-describing.
 
-Canonical role labels per entity:
+Canonical role labels per entity (v0.4.0, per `feedback_canonical_role_labels.md`):
 
 | Entity | Role label | Example tooltip |
 |---|---|---|
-| Todo | `"Assigned to"` | `Assigned to: Bob` |
-| Todo (waiting-on context) | `"Due to"` | `Due to: Bob` |
+| Rock / Todo / Metric / Mini-game / HIP-assumption | `"Responsible"` | `Responsible: Carol` |
+| Milestone (sub-work of rock) | `"Delegated to"` | `Delegated to: Bob` |
+| Todo (recipient slot — waiting-on context) | `"Due to"` | `Due to: Bob` |
 | Issue | `"Raised by"` | `Raised by: Alice` |
 | Headline | `"Shared by"` | `Shared by: Dave` |
-| Rock / Metric / Mini-game / HIP-assumption | `"Owner"` | `Owner: Carol` |
-| HIP plan | `"Created by"` | (use `tooltip` override — not in role enum yet) |
+| HIP plan | `"Created by"` | (use `tooltip` override — not in role union yet) |
 
-When the role doesn't fit the enum, use the `tooltip` prop directly. Don't extend the role enum unless the role recurs across ≥3 surfaces.
+**Legacy values** `"Owner"` and `"Assigned to"` remain in the type union for one sweep cycle. New code MUST use the v0.4.0 labels above. The cross-app sweep (#773) retires the legacy values, after which they'll be removed from the union (forward-only convention). See `feedback_canonical_role_labels.md` for the full transition table + grep recipe.
+
+When the role doesn't fit the union, use the `tooltip` prop directly. Don't extend the role union unless the role recurs across ≥3 surfaces (and pair the addition with a row in `feedback_canonical_role_labels.md`).
 
 When NOT to pass `role`: pure-decorative avatar surfaces (a profile-page header where the user is the page's subject — name is already in the h1; role is implicit and the tooltip would be redundant). These are rare.
 
