@@ -49,6 +49,15 @@ Anything can technically be turned into a verb. The signal is which reading land
 - **Due to** — recipient. The person who receives the output of the work, not who does it. Passive form is canonical here per the exemption above.
 - **Raised by** — **the responsibility label for issues**, named for the originating action. The person who raised the issue is the person on the hook to drive it to resolution. Treat structurally as Responsible (filter umbrella covers it; cross-app sweep targets it); render label as "Raised by." *Rationale (Ricky s60–s61): an issue's responsibility is implied by the act of raising it — the verb earns its place.*
 - **Shared by** — **the responsibility label for headlines**, same structure. Headlines are short broadcasts; the sharer carries whatever responsibility there is. Filter umbrella covers Shared-by alongside Responsible.
+
+### Past-tense vs forward-engagement labels
+
+Two flavors of responsibility coexist by design:
+
+- **Retrospective labels** name the originating action and lean past-tense: **Raised by** (issues), **Shared by** (headlines). The verb describes when/how the role was established. The role itself extends forward (the raiser is still the person on the hook), but the label points at the moment that created it.
+- **Forward-engagement labels** name the ongoing obligation directly: **Responsible** (top-level work), **Delegated to** (sub-work). The verb describes the current relationship.
+
+Both classes ARE the responsibility role for their entity. The tense difference is editorial — it picks the verb that reads most naturally for the entity's lifecycle. Issues are *opened* by an act of raising; headlines are *broadcast* by an act of sharing — so the past-tense form earns the label. Todos and rocks are *carried* over time — so the forward-tense form earns it.
 - **Created by** — document authorship. A HIP plan is a document; the creator authored it but doesn't necessarily own its outcomes.
 
 ## "Responsibility" — umbrella filter term

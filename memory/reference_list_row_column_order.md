@@ -23,8 +23,8 @@ Every list-page row reads left to right in the same slot order. Slots are option
 | 3 | **State circle** | `w-5` | The done/not-done toggle (`<RowStateCircle>` for /todos, status icon for /issues, etc.). Immediately precedes the title so the eye reads "state + title" as a unit. |
 | 4 | **TITLE (flex-1)** | grow | The row's primary content. Grows to fill available width; description/notes wrap below on one line truncated. Click → open editor (per `reference_entity_edit_affordance.md`). |
 | 5 | **Indicators** | auto | Comment count, linked-item count, spawn markers, comment-search hit indicator. Sit *after* the title because they're meta-about-the-title, not separate columns. Each is icon+number, no pill chrome (per `reference_status_pill_semantics.md`). |
-| 6 | **Resp-A** (primary responsibility) | `w-14` | The person on the hook — `<UserAvatar role="Responsible">` / `role="Raised by"` etc per `feedback_canonical_role_labels.md`. Full opacity. |
-| 7 | **Resp-B** (secondary recipient) | `w-14` | Optional second person slot — `role="Due to"` for /todos (the recipient of the output), or a delegate. Renders at `opacity-70` to encode secondary-ness visually. |
+| 6 | **Resp-A** (primary responsibility) | `w-14` | Who's on the hook — typically `<UserAvatar role="Responsible" \| "Raised by" \| ...>` for a person, OR `<TeamChip>` when a whole team carries primary responsibility. Full opacity. Per `feedback_canonical_role_labels.md` for the role label. |
+| 7 | **Resp-B** (secondary recipient / delegate) | `w-14` | Optional second slot — typically `role="Due to"` for /todos (the recipient of the output), a delegate, or a secondary team. Renders at `opacity-70` to encode secondary-ness visually. Person OR team — both shapes valid. |
 | 8 | **Date** | `w-24` | Due date (or status date). Right-justified text. Goes through `formatDueDate` (per `reference_date_format.md`); color rules in caller. |
 | 9 | **Team** | `w-20` | `<TeamChip>` (or Private lock icon if visibility=private). Last because team is the **least-additive column when the user has already scoped to one team** — for the most common view, every row repeats the same team, so putting it last preserves prime title-side real estate. |
 
@@ -33,12 +33,18 @@ The visual stripe (left side of the row, depth-keyed per entity) sits OUTSIDE th
 ## Resp-A vs Resp-B — opacity rule
 
 When both responsibility slots are present:
-- **Resp-A** renders at `opacity-100` (full) — this is the primary person on the hook.
-- **Resp-B** renders at `opacity-70` — secondary recipient. The fade encodes "less weight" without using a different shape.
+- **Resp-A** renders at `opacity-100` (full) — the primary on the hook.
+- **Resp-B** renders at `opacity-70` — secondary recipient or delegate. The fade encodes "less weight" without reshaping the chip.
 
-Both slots use `<UserAvatar size="sm">` (circle) for people, OR `<TeamChip size="sm">` (rounded-square) for teams. **Shape encodes type** — circle = person, rounded-square = team. The viewer disambiguates Resp-A from Resp-B by *position* and *opacity*, not by reshaping either chip (per `reference_status_pill_semantics.md` shape rule).
+Both slots accept **person OR team**: `<UserAvatar size="sm">` (circle) for people, `<TeamChip size="sm">` (rounded-square) for teams. **Shape encodes type** — circle = person, rounded-square = team. The viewer disambiguates Resp-A from Resp-B by *position* + *opacity*; person-vs-team is read from *shape*. Neither axis gets confused for the other.
 
-Example: /todos Resp-A = the Responsible person (full opacity, circle), Resp-B = the Due-to person or team (opacity-70, circle if person / rounded-square if team).
+Common pairings:
+- /todos default: Resp-A = Responsible **person** (circle, full), Resp-B = Due-to **person** (circle, opacity-70).
+- /todos team-delivers: Resp-A = Responsible person (circle, full), Resp-B = Due-to **team** (rounded-square, opacity-70).
+- Team-as-primary (e.g. an entity where a whole team carries the work, not an individual): Resp-A = **team** (rounded-square, full), Resp-B = person carrying the recipient role (circle, opacity-70) — or omitted.
+- Single-person, no recipient: Resp-A = person (circle, full), Resp-B = empty.
+
+Shape never flips per position. A team in Resp-A still renders rounded-square; a person in Resp-B still renders circle. The four combinations cover every responsibility pairing without inventing a third shape.
 
 ## Why team is last (the rationale that surprises people)
 
