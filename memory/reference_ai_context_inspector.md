@@ -14,6 +14,86 @@ Reference implementation: [`components/AIContextInspector.tsx`](../components/AI
 
 ---
 
+## 0. Variants — Full / Minimal / None (v0.4.0, s60)
+
+**Principle:** *Don't kill a fly with a cannonball. The inspector should reflect what the feature actually consumes.*
+
+Not every AI feature pulls from the org-wide context graph. Wrapping a feature that doesn't consume those sources in the **Full** inspector is theater — right-clicking reveals nine toggles that don't actually filter anything. The s60 fix on /todos fuzzy-search (Meaning mode) removed the Full wrap because the AI call uses only the candidate items + query, not rocks/scorecards/issues.
+
+The canon recognizes three variants:
+
+| Variant | When to use | What it shows |
+|---|---|---|
+| **Full** | Feature consumes org-wide context (rocks / scorecards / issues / todos / vto / team data via `AI_FEATURE_SETS`). | Current 9-source UI: manual context, auto data sources, AI rules, scope annotations, source toggles, custom instructions textarea. |
+| **Minimal** | Feature uses a narrow, scoped context (e.g. only the candidate items + the query; only this entity's history). | Single-line "This feature uses only **{scope}**; no org-wide context" + custom-instructions textbox. No source toggles (there's nothing to toggle). |
+| **None** | Feature has no AI context at all (pure templating, deterministic transform). Or the surrounding chrome already communicates context (e.g. the AI button is inside a form whose values are the entire input). | No wrap. Plain `<AIButton>` only. |
+
+### Pick the variant — the test
+
+Before wrapping an AI button, answer:
+
+1. Does this feature pull from `AI_FEATURE_SETS` (auto data) or company-context sections or AI rules? **Yes → Full.**
+2. Does the AI call use *some* implicit context that the user might want to see/disable, but it's not the org-wide graph? **Yes → Minimal** with a one-line description of what context is in play.
+3. Does the AI call use *only* the explicit inputs the user can see in the form? **Yes → None.** Just an `<AIButton>`.
+
+### Full variant — the existing 9-source UI
+
+Default. Documented in sections 1–6 below. Use when the feature feature-key appears in `AI_FEATURE_SETS` (e.g. `"general"`, `"description_gen"`, `"rock_suggestions"`).
+
+```tsx
+<AIContextInspector feature="description_gen">
+  <AIButton onClick={generate} />
+</AIContextInspector>
+```
+
+### Minimal variant — single-line scope + optional instructions
+
+For features with narrow context. The popover reads:
+
+```
+This feature uses only: {short scope description}
+[empty line]
+Custom instructions (optional)
+[textarea]
+[Save]
+```
+
+No source toggles section. No scope-annotation chips. The data contract is simpler — no `InspectorData` fetch needed; the scope description is hard-coded by the consumer.
+
+```tsx
+<AIContextInspectorMinimal
+  scope="the candidate to-dos + your query"
+  storageKey="ai-context-instructions-todo-fuzzy"
+  onCustomInstructions={(v) => { customInstructionsRef.current = v; }}
+>
+  <AIButton onClick={runFuzzy} />
+</AIContextInspectorMinimal>
+```
+
+Custom instructions still persist to `localStorage` under the same key shape as Full (`ai-context-instructions-{feature}`). The `disabledSources` machinery is absent (nothing to disable).
+
+### None variant — plain AIButton
+
+No wrap at all. Use when the AI call truly takes only the explicit form values + query as input.
+
+```tsx
+<AIButton onClick={runSimpleTransform} />
+```
+
+The visual is identical to the wrapped versions — just no right-click affordance. **Don't** add a wrap-just-for-consistency; an inspector with nothing to inspect is worse than no inspector.
+
+### Off-canon
+
+- Wrapping a Minimal-shaped feature in Full because "it's the default." That's theater — see s60 fuzzy-search lesson.
+- Building a 4th variant. The three above cover the spectrum.
+- Wrapping a None-variant button in Full so right-click shows "this feature uses no AI context." A noop inspector pretends to be transparent while being silent. None is correct.
+
+### Field-note pairing
+
+See `reference_canon_sweep_field_notes.md` B8a — "AIContextInspector wrap on a feature that doesn't consume the sources it claims." Grep recipe in the field note.
+
+---
+
 ## 1. Data contract
 
 The component fetches `InspectorData` from the consumer app's API and renders three categorized lists of sources + a custom-instructions textarea.

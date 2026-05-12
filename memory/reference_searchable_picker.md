@@ -63,6 +63,7 @@ Examples that MUST be SearchablePicker even though they're small today: user pic
       sublabel?: string,     // secondary line, smaller + gray
       group?: string,        // section header in dropdown
       icon?: ReactNode,      // left-side decoration (avatar, glyph)
+      badge?: ReactNode,     // right-side decoration (small chip — see Badge slot below)
       searchTokens?: string, // extra strings to match (label/sublabel/group already match)
       disabled?: boolean,    // renders but unselectable
     },
@@ -71,8 +72,65 @@ Examples that MUST be SearchablePicker even though they're small today: user pic
   placeholder="— select —"
   searchPlaceholder="Search…"
   panelWidth={320}     // default 320, override for narrower fields
+  triggerShape="form"  // "form" (default) | "inline" — see Trigger shape below
+  align="left"         // "left" (default) | "right" — see Alignment rule above
 />
 ```
+
+## Trigger shape — `triggerShape="form"` (default) | `"inline"` (v0.4.0, s60)
+
+`<SearchablePicker>` renders two distinct trigger shapes depending on where it lives in the layout:
+
+| Shape | Use for | Renders as |
+|---|---|---|
+| `"form"` (default) | Pickers inside form fields, slide-over body, table cells — anywhere a labeled `<select>`-like surface is expected. | `border border-gray-200 rounded-md px-2 py-1.5 text-sm bg-white` (form-input shape). |
+| `"inline"` | Pickers embedded in typography — page H1 scope picker, inline-clickable labels, etc. | Plain text with chevron and hover state. No border, no chip background, inherits surrounding font size + weight. |
+
+The `"inline"` shape is the canonical H1 team-picker pattern — see `reference_team_picker.md`. Hover behavior on inline triggers: text color lifts to brand-blue (`hover:text-[#0069AA]`) so the surface reads as clickable.
+
+```tsx
+// H1 inline use
+<h1 className="text-2xl font-bold flex items-baseline gap-2">
+  <span>To-Dos</span>
+  <span className="text-gray-300 font-normal">—</span>
+  <SearchablePicker
+    triggerShape="inline"
+    options={scopeOptions}
+    value={scopeValue}
+    onChange={setScope}
+  />
+</h1>
+```
+
+When `triggerShape="inline"`, the picker inherits the parent's font size + weight — no need to override. The panel that opens is the same shape regardless of trigger.
+
+## Badge slot — `option.badge` (v0.4.0, s60)
+
+Each option can carry a `badge` ReactNode rendered at the right end of the row, opposite the optional left-side `icon`. Used for short status markers that disambiguate options without consuming the primary label real estate.
+
+Canonical example — "Primary" badge on the user's primary team in the team-scope picker:
+
+```tsx
+{
+  id: primary.id,
+  label: primary.name,
+  icon: <TeamChip team={primary} size="xs" />,
+  badge: (
+    <span className="text-[9px] uppercase tracking-wider font-semibold
+                     text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded">
+      Primary
+    </span>
+  ),
+}
+```
+
+Badge anatomy (loose, but follow when in doubt):
+- Small uppercase pill — `text-[9px] uppercase tracking-wider font-semibold`
+- Subtle background — `bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded` for neutral status; entity-tone bg for status badges
+- Don't put long copy in the badge — single short word ("Primary", "New", "Locked")
+- Don't use the badge for the option's primary identity — that's the `label`'s job
+
+The badge does NOT appear on the **trigger** — only inside the dropdown. When the user selects a row with a badge, the trigger shows just the option's `label` (e.g. `Leadership Team ▾`, not `Leadership Team Primary ▾`). The badge's purpose is dropdown-side disambiguation, not status persistence.
 
 ## Visual canon
 
