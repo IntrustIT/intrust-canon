@@ -257,11 +257,13 @@ The cross-tab rule applies ONLY when tabs are same-class (per `reference_primary
 - Each returned row carries its tab affinity (`tab: "short-term" | "long-term"` or similar) so the client can render the badge.
 - Frontend — render the badge in row JSX when `row.tab !== activeTab` AND `searchMode !== "filter"`.
 
-## 7. Archive rows in All / By-meaning modes — opacity fade
+## 7. Archive-view opacity fade — triggered by Archive switch, not per-result
 
-When the user runs All or Meaning mode, archived items are included in the result set (the mode broadens scope past current filters). Archived rows render at **`opacity-45`** on the entire row container — stripe + title + avatars + everything. The visual fade tells the user "this matched but it's archived." Stripe color stays entity-hue (per `reference_stripe_system.md`); the fade is uniform on top.
+The `opacity-45` row fade applies **only when the Archive switch is ON** — i.e., the user is intentionally viewing the archive. In that view every row is archived, and the uniform fade signals "you're in the archive."
 
-Don't use a separate "Archived" badge — the opacity fade is the indicator. Adding a badge is double-encoding.
+The fade is **NOT** a per-result indicator inside All / By-meaning search modes. When those modes surface an archived hit alongside non-archived hits, the archived row renders at full opacity like any other. The mode pill (All / By meaning) already tells the user "scope broadened past current filters" — fading individual rows would double-encode and visually punish a valid hit.
+
+Don't use a separate "Archived" badge either — when the user is in archive view, the switch state IS the indicator; when they're in All / By-meaning, scope is implied by the mode.
 
 ## 8. URL + state contract
 

@@ -254,10 +254,11 @@ The previous "surgical edits against existing code + apply each canon rule" appr
 - **Pilot (v0.4.1):** /issues Short-Term | Long-Term. Sweep target: /headlines (Wins / FYIs?), /scorecard if metric flavors warrant.
 
 ### D28. Persistent attribute section rolled as dynamic group-by entry
-- **What it is:** A page hides a section that should be persistent (always at top or bottom — Done todos, Stractical issues, Pinned items) inside the user's optional Group-by selector. User has to actively pick "Group by Done state" to see done items at the bottom; otherwise they're mixed in.
+- **What it is:** A page hides a section that should be persistent (always at top or bottom — Stractical issues, Pinned items) inside the user's optional Group-by selector. User has to actively pick a Group-by entry to see the bucket; otherwise it's mixed in.
 - **Why it's drift:** Per `reference_persistent_section_grouping.md` v0.4.1. Persistent sections render their attribute grouping unconditionally — they're not user-driven.
 - **Replacement:** Implement the section as always-rendered at its declared position. User can collapse but not remove. Filters apply to both the section and the main pile; section opts out of dynamic group-by per its declared sort/group contract.
-- **Pilot (v0.4.1):** /issues Short-Term tab Stractical section. /todos Done section already conformant. Sweep target: /headlines (Pinned section if pinning ships), other lists with always-on attribute sections.
+- **Pilot (v0.4.1):** /issues Short-Term tab Stractical section. Sweep target: /headlines (Pinned section if pinning ships), other lists with always-on attribute sections.
+- **NOT a pilot — common false assumption:** /todos has NO persistent Done section. Completed todos render inline, governed by normal filters/sort. Don't read /todos as a Done-section pilot, and don't propagate one.
 
 ### D29. Signature filter duplicated inline AND inside Filters popover
 - **What it is:** A page's signature filter (e.g. "Stractical only" on /issues) renders BOTH as an inline Band-2 control AND as an entry inside the Filters popover. User sees the same toggle twice; can't tell which is canonical.

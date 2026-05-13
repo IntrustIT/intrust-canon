@@ -1,6 +1,6 @@
 ---
 name: Persistent section grouping by attribute
-description: Pattern for sections that always render at a fixed position in a list (top or bottom), grouped by a stable attribute. Distinct from dynamic group-by selectors. Each section declares its own sort/group contract. Pilots: Done todos (bottom of /todos), Stractical issues (top of Short-Term tab on /issues).
+description: Pattern for sections that always render at a fixed position in a list (top or bottom), grouped by a stable attribute. Distinct from dynamic group-by selectors. Each section declares its own sort/group contract. Pilot: Stractical issues (top of Short-Term tab on /issues).
 type: reference
 ---
 
@@ -13,9 +13,15 @@ estate — a section that's always there at top or bottom of the list,
 grouped by an attribute the user doesn't need to choose to surface.
 
 Examples:
-- Done todos at the bottom of /todos (collapsed by default)
 - Stractical issues at the top of the Short-Term tab on /issues
 - Pinned items at the top of a list (future canon when needed)
+
+Counter-example (worth calling out — common mistaken assumption):
+**Done todos are NOT a persistent section.** Completed todos render
+inline with the rest of the list, governed by normal filters/sort. The
+RowStateCircle is the only state affordance; there is no bottom-of-list
+"Done" bucket. Don't propagate a Done-section pattern from /todos — it
+isn't there.
 
 These are NOT the same as the user-driven Group by selector in the
 ⋮ view kebab. Persistent sections are always-on per the page; the
@@ -50,7 +56,6 @@ Each persistent section declares its own sort/group contract.
 
 | Section | Position | Default state | Respects page sort? | Respects page group-by? |
 |---|---|---|---|---|
-| Done todos (/todos) | Bottom | Collapsed | No (flat, no sort) | No |
 | Stractical (/issues Short-Term tab) | Top | Expanded | Yes | No |
 | Pinned (future) | Top | Expanded | Yes | No |
 
@@ -58,10 +63,8 @@ The shared rule: **persistent sections opt out of the page's dynamic
 group-by selector.** Nesting groups inside small sections is over-chrome;
 the section itself IS the grouping affordance.
 
-The variable rule: sort behavior. Active high-priority sections
-(Stractical, Pinned) respect the page's active sort because users want
-meaningful ordering. Archive-flavored sections (Done) stay flat
-because ordering matters less inside a passive archive.
+The variable rule: sort behavior. Active sections respect the page's
+active sort because users want meaningful ordering inside the bucket.
 
 ## Filter behavior
 
