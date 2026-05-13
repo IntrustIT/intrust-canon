@@ -47,11 +47,15 @@ the visible relationship to its container.
 
 ## What this rules in
 
-- **Parent-link inheritance signals.** When a child's parent carries
-  a canonical type-glyph (⚡ for Stractical, etc.), the child's
-  parent-link breadcrumb renders that glyph inline ahead of the
-  parent title. See `reference_list_row_column_order.md` for the
-  visual contract.
+- **Parent-link inheritance signals (v0.4.8 — strategic only).** When
+  a child's parent is a *strategically-committed* entity — 🪨 Rock or
+  ⚡ Stractical issue — the child's parent-link breadcrumb renders that
+  glyph inline ahead of the parent title. Long-term issues, regular
+  short-term issues, headlines: breadcrumb still renders, but no
+  glyph. The line: strategic commitment, not just topical relevance.
+  Long-term issues are bigger-picture *discussion* — they may *become*
+  a rock, at which point the glyph applies. Until then, no inheritance.
+  See `reference_list_row_column_order.md` for the visual contract.
 - **Group-by parent type.** When users want to cluster atomic
   actions by the type of their parent (all Stractical-anchored
   todos together, etc.), it's a Group-by option in the ⋮ view

@@ -87,18 +87,27 @@ re-classifying the child. Per `feedback_types_live_on_containers.md`,
 types live on containers; children inherit strategic weight through
 the breadcrumb relationship, not via their own type field.
 
-**Glyph set (initial v0.4.7 coverage — extend as parent types grow):**
+**Glyph set (v0.4.8 — strategic-parent-only rule):**
 
-| Parent entity type | Glyph | Source |
+The glyph appears ONLY when the parent is an entity that the
+organization has *committed to caring about strategically*. Strategic
+commitment is the line: rocks (committed strategic execution) and
+stractical issues (operations-to-strategy bridge) earn the glyph.
+Discussion items, retrospective items, and routine operations do not.
+
+| Parent entity type | Glyph | Why included / excluded |
 |---|---|---|
-| Issue: Stractical | ⚡ | `reference_issue_type_spectrum.md` |
-| Issue: Short-Term | ⏱ | `reference_issue_type_spectrum.md` |
-| Issue: Long-Term | 🔭 | `reference_issue_type_spectrum.md` |
-| Rock | 🪨 | `reference_icon_vocabulary.md` |
-| Milestone | (none — inherits rock context via chain) | — |
-| Headline (Win) | 🏆 | `reference_icon_vocabulary.md` |
-| Headline (FYI) | 📢 | `reference_icon_vocabulary.md` |
-| Todo (as parent of another todo, rare) | ✅ | `reference_icon_vocabulary.md` |
+| Rock | 🪨 | Committed strategic execution. |
+| Issue: Stractical | ⚡ | Explicit bridge from operations to strategy. |
+| Milestone | (none — inherits rock by chain position) | Breadcrumb renders as `🪨 Rock Name › Milestone Name ›` — glyph attaches to the rock segment, not the milestone. |
+| Issue: Long-Term | none | Discussion items about the bigger picture, not committed strategy. May *become* a rock; until then, no glyph. |
+| Issue: Short-Term | none | Routine operations. |
+| Headline (Win / FYI) | none | Retrospective / informational. |
+| Todo (as parent, rare) | none | Atomic action; no weight to propagate. |
+
+When a child's parent doesn't appear in the glyph-included rows, the
+breadcrumb still renders (blue link text + chevron), just without a
+leading glyph.
 
 **Locked rendering inside the breadcrumb span:**
 
