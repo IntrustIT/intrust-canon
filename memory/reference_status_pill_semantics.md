@@ -78,6 +78,32 @@ Existing drift: 1 callsite in /issues row chrome. Sweep target.
 
 **Don't** mix sizes within the same row — pick one (compact or standard) per surface and stick with it.
 
+## Issue status — binary open / solved (v0.4.1)
+
+Issues use **binary status only**: Open (not yet resolved) and Resolved (done). The earlier intermediate values are retired at the render layer:
+
+- ❌ `identified` — retired
+- ❌ `discussing` — retired
+- ❌ `confused` — retired
+- ❌ `in_progress` — retired
+- ✅ Open
+- ✅ Resolved
+
+**Archived is a separate flag** (`Issue.archived: boolean`), not a status. An issue can be Open + archived or Resolved + archived; the two axes are orthogonal.
+
+**Render-layer rule.** Schema enum values stay as-is per forward-only migration policy. Pickers, filters, pills, columns, AI context strings all drop every intermediate value. Don't migrate the database; just render `Open` for anything that isn't `solved`, and `Resolved` for `solved`. (UI says "Resolved"; schema enum stays `"solved"`.)
+
+**State-flip surface.** The row-level `<RowStateCircle>` is the only user-facing toggle for issue status. No status pill in the row (the circle IS the state indicator). No status column. The `<StatusPicker>` in IssueDetailEditor reduces to two options: Open and Resolved.
+
+**Why binary.** The intermediate values created drift — "Identified" vs "Discussing" was a judgement call per-user, "Confused" was a never-used escape hatch, "In progress" had no clear flip event. Issues are conceptually about "the thing needs solving" or "it's solved." Binary captures that without forcing taxonomy work on every user.
+
+**Off-canon:**
+- Adding a new intermediate value back. If a workflow needs more granularity (e.g. "Routed away" or "Awaiting decision"), use a separate orthogonal flag, not an additional status.
+- Rendering a status pill in the row alongside the RowStateCircle. The circle IS the state; the pill duplicates.
+- Filtering by status (Open vs Resolved) inside the Filters popover. Resolved is now an archive-flavored state — surface via the binary RowStateCircle and an inline "Show resolved" treatment if needed (TBD when the use case arises).
+
+**Field-note pairing:** D22 ("Complete"/"Completed"/"Incomplete" copy drift, per `feedback_done_not_done.md`) applies to issue status too — render "Open" / "Resolved" / "Mark resolved" / "Mark open," not "Solved" / "Mark solved."
+
 ## Color → meaning convention
 
 Across the entity status maps (`ISSUE_STATUS_COLORS`, `ROCK_PHASE_COLORS`, `TODO_STATUS_COLORS`, `HEADLINE_TONE_COLORS`, `MEETING_STATUS_COLORS` in `lib/status-colors.ts`):

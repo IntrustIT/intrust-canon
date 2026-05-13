@@ -36,6 +36,19 @@ Before wrapping an AI button, answer:
 2. Does the AI call use *some* implicit context that the user might want to see/disable, but it's not the org-wide graph? **Yes → Minimal** with a one-line description of what context is in play.
 3. Does the AI call use *only* the explicit inputs the user can see in the form? **Yes → None.** Just an `<AIButton>`.
 
+### The truth test — does the inspector match reality? (v0.4.1)
+
+**Test before shipping any wrap:** "Does the API actually consume any source the inspector advertises?"
+
+- ✅ Yes → wrap is honest. Full or Minimal depending on whether the source set is org-wide or scoped.
+- ❌ No → wrap is theater. Remove it (use None) or narrow it (switch to Minimal with the actual scope).
+
+Concretely: if an AI button on a list page hits an endpoint that filters by the current query against the already-loaded candidate items, and the endpoint ignores `disabledSources`, the Full inspector is lying. Right-clicking the Detect-Patterns button might advertise nine sources; if the endpoint doesn't read any of them, every toggle is a noop.
+
+Two AI buttons on the same page can be different variants — they're separate features even when they share a feature-set name. Don't conflate them. Detect Patterns (reads org-wide issue history) vs Meaning search (reads only the current candidate items + query) are DIFFERENT features; one earns Full, the other earns Minimal or None.
+
+This is the principle Ricky locked in s60: *don't kill a fly with a cannonball; the inspector should reflect what the feature actually consumes.*
+
 ### Full variant — the existing 9-source UI
 
 Default. Documented in sections 1–6 below. Use when the feature feature-key appears in `AI_FEATURE_SETS` (e.g. `"general"`, `"description_gen"`, `"rock_suggestions"`).

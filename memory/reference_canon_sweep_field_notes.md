@@ -84,11 +84,20 @@ Run the greps as a starting checklist, then read the actual code at each hit to 
 - **Replacement:** `<Tooltip text="...">child</Tooltip>`.
 - **Grep:** `grep -nE 'title="' app/**/*.tsx components/**/*.tsx | grep -v aria-label`
 
-### D9. Date display via raw `toLocaleDateString` instead of `formatDueDate`
-- **What it is:** Inline `new Date(x).toLocaleDateString(...)` for due-date rendering.
-- **Why it's drift:** `lib/format-due-date.ts:formatDueDate` is canonical; produces `Apr 18 (-13d)` / `May 1 (today)` format with status bucket. Per `reference_date_format.md`.
+### D9. DUE-DATE display via raw `toLocaleDateString` instead of `formatDueDate`
+- **What it is:** Inline `new Date(x).toLocaleDateString(...)` for **due-date** rendering (todos, rocks, milestones — anything with future-tense urgency).
+- **Why it's drift:** `lib/format-due-date.ts:formatDueDate` is canonical; produces `Apr 18 (-13d)` / `May 1 (today)` format with signed delta + status bucket. Per `reference_date_format.md`.
+- **Scope (v0.4.1):** Due-dates ONLY. For event timestamps (createdAt, routedAt, publishedAt), use D9b.
 - **Replacement:** `const due = formatDueDate(dueDate);` then `due.label` + `due.status` for color rules.
-- **Grep:** `grep -nE 'toLocaleDateString|toLocaleString' app/**/*.tsx components/**/*.tsx`
+- **Grep:** `grep -nE 'toLocaleDateString|toLocaleString' app/**/*.tsx components/**/*.tsx` then check whether the date is a due-date (use D9) or an event timestamp (use D9b).
+
+### D9b. EVENT-TIMESTAMP display via raw `toLocaleDateString` instead of `formatEventDate`
+- **What it is:** Inline date formatting for event timestamps like `createdAt`, `routedAt`, `publishedAt`, `archivedAt` — dates that name a past event, not a future obligation.
+- **Why it's drift:** Event timestamps have NO urgency framing. The signed-delta format from `formatDueDate` (e.g. `Apr 18 (-4d)`) reads wrong on a created-4-days-ago row — the user reads `(-4d)` as "4 days overdue" when it should mean "4 days ago." `lib/format-due-date.ts:formatEventDate` produces `Apr 18 (12d ago)` / `May 12 (today)` — always positive delta + "ago" suffix.
+- **Scope (v0.4.1):** Event timestamps ONLY. For due-dates, use D9.
+- **Replacement:** `const ts = formatEventDate(createdAt);` then `ts.label`. No status bucket (event timestamps don't carry urgency).
+- **Grep:** same as D9 — distinguish by whether the field is a past event or a future obligation.
+- **Helper impl:** `lib/format-due-date.ts:formatEventDate` shipped in `intrust-os` commit 91a2cb3.
 
 ### D10. Hand-rolled colored-pill statuses ignoring `status-colors.ts`
 - **What it is:** Inline `bg-yellow-100 text-yellow-700` etc. for status indicators.
@@ -206,6 +215,40 @@ Run the greps as a starting checklist, then read the actual code at each hit to 
 - **Replacement:** Single ⋮ kebab at right end of Band 2. Internal sections: LAYOUT / GROUP BY / ACTIONS (separated by `pt-2 border-t border-gray-100` before ACTIONS). Section-label style `text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1`.
 - **Grep:** On each list page, grep for `groupBy|layout|Expand all|Collapse all|Reset` in the JSX. Outside-kebab placements are the drift.
 - **Pilot (v0.3.13):** /todos `app/todos/page.tsx:1062–1103`. Sweep target: any list page that adds layout/group-by/reset and forgets to put them in the kebab.
+
+### D26. Page-level AI action placed in Band 2 instead of Band 1 right-side action cluster
+- **What it is:** An AI-triggering page-level action (e.g. "Detect Patterns" on /issues, "Cluster by theme," "Summarize this quarter") rendered inside Band 2 (filter row) — typically between Search and a switch.
+- **Why it's drift:** Per `reference_list_standards.md` v0.4.1 update. AI page-level actions are sibling to `+ Add {Entity}` — they belong in Band 1's right-side action cluster, NOT in the filter row. The filter row is for items that narrow the list; AI actions operate on the whole set.
+- **Replacement:** Move the AI action to Band 1 right-side, styled as `✨ {Action}` (orange sparkle pill per `reference_ai_button.md`). Wrap in `<AIContextInspector>` Full or Minimal variant per `reference_ai_context_inspector.md`.
+- **Grep:** `grep -nE 'AIButton|Sparkles' app/**/*page.tsx` then verify the parent container is Band 1 right-cluster, not Band 2.
+- **Pilot (v0.4.1):** /issues `app/issues/page.tsx` (post-retrofit). Sweep target: any list page with a page-level AI action — verify Band 1 placement.
+
+### D27. Primary-mode tabs rolled as filter chips OR missing entirely
+- **What it is:** A list page has sub-types that should be primary-mode tabs (per `reference_primary_mode_tabs.md` v0.4.1) but is implementing them as Band-2 filter chips, hub-page tabs, or no separation at all.
+- **Why it's drift:** Primary-mode tabs encode a mental-mode shift the user commits to for a session. Demoting them to filter chips loses the visibility argument; promoting to hub-page tabs over-engineers when content shapes are the same.
+- **Replacement:** Tab bar between H1 row and Band 1, locked tab style (`border-b-2 border-[#0069AA]` active). Tabs persist in URL. Filter state and sort preference scoped per-tab. Per `reference_primary_mode_tabs.md`.
+- **Test:** Does the page have sub-types where users (a) have the same row template + filters, (b) shift mental mode between sub-types, (c) commit to one for a session? → Primary-mode tabs.
+- **Pilot (v0.4.1):** /issues Short-Term | Long-Term. Sweep target: /headlines (Wins / FYIs?), /scorecard if metric flavors warrant.
+
+### D28. Persistent attribute section rolled as dynamic group-by entry
+- **What it is:** A page hides a section that should be persistent (always at top or bottom — Done todos, Stractical issues, Pinned items) inside the user's optional Group-by selector. User has to actively pick "Group by Done state" to see done items at the bottom; otherwise they're mixed in.
+- **Why it's drift:** Per `reference_persistent_section_grouping.md` v0.4.1. Persistent sections render their attribute grouping unconditionally — they're not user-driven.
+- **Replacement:** Implement the section as always-rendered at its declared position. User can collapse but not remove. Filters apply to both the section and the main pile; section opts out of dynamic group-by per its declared sort/group contract.
+- **Pilot (v0.4.1):** /issues Short-Term tab Stractical section. /todos Done section already conformant. Sweep target: /headlines (Pinned section if pinning ships), other lists with always-on attribute sections.
+
+### D29. Signature filter duplicated inline AND inside Filters popover
+- **What it is:** A page's signature filter (e.g. "Stractical only" on /issues) renders BOTH as an inline Band-2 control AND as an entry inside the Filters popover. User sees the same toggle twice; can't tell which is canonical.
+- **Why it's drift:** Per `reference_list_standards.md` v0.4.1 Band-2 update. Each page picks ONE signature inline filter beyond the always-inline elements; that filter NEVER duplicates in the popover. (Stractical specifically resolves to persistent-section grouping, not signature switch — see `reference_persistent_section_grouping.md`.)
+- **Replacement:** Pick one home. If the filter earns "signature" status (highly-flipped, mode-defining binary), inline only — remove from popover. If it doesn't earn signature status, popover only — remove from inline.
+- **Grep:** Visually check Band 2 inline switches and the Filters popover content per page. Duplicates jump out.
+- **Pilot (v0.4.1):** /issues had "Stractical only" duplicated pre-retrofit; resolved by moving Stractical to persistent-section grouping (no switch).
+
+### D30. Filters popover used with <3 narrow filter axes (over-engineering)
+- **What it is:** A page renders a Filters popover for 1–2 narrow filter axes that would comfortably fit inline.
+- **Why it's drift:** Per `reference_list_standards.md` v0.4.1 popover-threshold rule. Filters popovers are earned, not assumed. With ≤2 narrow axes beyond the always-inline elements, fold inline instead.
+- **Replacement:** Remove the Filters popover; inline the narrow filters in Band 2 between Search and the kebab.
+- **Test (intent-based, not numeric):** Is Band 2 starting to feel crowded? If no, no popover.
+- **Pilot (v0.4.1):** /todos has zero narrow filter axes — no popover, all inline. /issues has Raised by + Need + Direct Reports = popover earned.
 
 ---
 

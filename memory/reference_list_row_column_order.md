@@ -36,7 +36,9 @@ When both responsibility slots are present:
 - **Resp-A** renders at `opacity-100` (full) — the primary on the hook.
 - **Resp-B** renders at `opacity-70` — secondary recipient or delegate. The fade encodes "less weight" without reshaping the chip.
 
-Both slots accept **person OR team**: `<UserAvatar size="sm">` (circle) for people, `<TeamChip size="sm">` (rounded-square) for teams. **Shape encodes type** — circle = person, rounded-square = team. The viewer disambiguates Resp-A from Resp-B by *position* + *opacity*; person-vs-team is read from *shape*. Neither axis gets confused for the other.
+Both slots accept **person OR team**: `<UserAvatar size="sm">` (circle, 24px) for people, `<TeamChip size="sm">` (rounded-square, 24px) for teams. **Shape encodes type** — circle = person, rounded-square = team. The viewer disambiguates Resp-A from Resp-B by *position* + *opacity*; person-vs-team is read from *shape*. Neither axis gets confused for the other.
+
+Note on relative sizing: `<TeamChip>` in row cells is intentionally a touch larger than `<UserAvatar>` despite the same `size="sm"` declaration — the team chip carries a glyph badge and the size delta is part of the visual language (per `reference_status_pill_semantics.md` Size canon section). Don't override either to force equality.
 
 Common pairings:
 - /todos default: Resp-A = Responsible **person** (circle, full), Resp-B = Due-to **person** (circle, opacity-70).
@@ -55,6 +57,53 @@ Intuition says "team is the primary scope, put it on the left." But:
 3. When the user IS viewing "All teams," the team chip earns its spot — but even then, scanning the team column once per row is faster on the right than on the left, because the eye already established the row's identity via title + owner + date.
 
 Codified 2026-05-12 after the /todos s60 polish settled on team-last and it tested well with Ricky + Kyle.
+
+## Per-entity exceptions (slot-set varies, slot order doesn't)
+
+Some entities legitimately omit slots that don't apply. The relative
+order of slots that DO render must always match the canonical grid.
+
+### /issues exception (v0.4.1)
+
+Issues have no due-date and no Resp-B slot. Status is intentionally
+removed from the row entirely (per `reference_status_pill_semantics.md`
+Issue binary-status section — the RowStateCircle is the only
+user-facing toggle).
+
+Tail order for issue rows:
+```
+[bulk][drag][state ○ via RowStateCircle][TITLE][indicators][stractical glyph][need][resp-A=Raised by][created/age][team]
+```
+
+- The state circle is the open/resolved toggle (no status pill).
+- The stractical glyph (⚡) marks issues that bridge operational +
+  strategic — surfaced as a row indicator AND as a persistent-section
+  grouping (see `reference_persistent_section_grouping.md`).
+- "Need" is the issue's intent-bucket (raised vs identified vs
+  routed) — small pill in the indicators slot.
+- Created/age uses `formatEventDate` (per field-notes D9b), NOT
+  `formatDueDate` — issues are tracked by creation age, not due date.
+
+Reference impl: `app/issues/page.tsx` (post-v0.4.1 retrofit).
+
+## Compact-density variant (v0.4.1)
+
+When a list page offers a Compact view (Layout: List / Compact in the
+view kebab), the Compact variant renders the SAME canonical slot order
+as the List view — just single-line with tighter chrome:
+
+- `py-1.5` instead of `py-3` (tighter vertical padding)
+- No description-preview line below the title
+- Indicators slot still renders, but non-essential sub-pills MAY
+  collapse to a single summary glyph (e.g. multiple linked-target
+  chips → one `🔗 3` count + glyph)
+- All sort and filter logic unchanged — Compact is a pure visual mode
+
+The slot grid is preserved; the CONTENT inside slots may degrade
+gracefully. Don't reshuffle slot order in Compact — it must remain
+muscle-memory consistent with List.
+
+Reference impl: `app/issues/page.tsx` (Compact rewrite, post-v0.4.1).
 
 ## Width tokens
 

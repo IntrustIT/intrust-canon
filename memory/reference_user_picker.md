@@ -23,13 +23,33 @@ This pairs with [`<UserAvatar role="...">`](reference_user_avatar.md) on the dis
   onChange={setOwnerId}
   users={users}                  // pre-loaded user list, optional team-scoped
   teamId={currentTeamId}         // optional — pre-filter to team members + leadership
-  allowUnassigned={true}         // shows "Unassigned" as the first option
+  allowUnassigned={true}         // shows the unassigned option as the first row
+  unassignedLabel="Unassigned"   // optional, default "Unassigned" (v0.4.1) — see below
   allowMe={true}                 // surfaces current user at top under "You" header
   align="left"                   // optional, default "left" — forwards to SearchablePicker (see v0.3.16)
   disabled={false}
   required={true}                // adds visual asterisk + integrates with form validation
 />
 ```
+
+### `unassignedLabel` prop (v0.4.1)
+
+Controls the label shown for the empty-value option when `allowUnassigned`
+is true.
+
+| Context | Pass | Result |
+|---|---|---|
+| Entity form field (default) | nothing | Row reads "Unassigned" |
+| Filter context (e.g. /issues Raised-by filter) | `unassignedLabel="Anyone"` | Row reads "Anyone" |
+
+Empty-value semantics are unchanged regardless of label — selecting the
+unassigned row sets `value=""` and clears the filter or field.
+
+Use the "Anyone" label in **filter** contexts where the empty option
+means "don't filter by this attribute," not "the entity is literally
+unassigned." Mismatched labels confuse the user: a filter that shows
+"Unassigned: Anyone" makes them think they're filtering for items with
+no assignee, not bypassing the filter.
 
 Locked behavior:
 - **Trigger** is a SearchablePicker-style field showing the current selection (avatar + name) or "Unassigned" placeholder.

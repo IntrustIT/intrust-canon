@@ -103,6 +103,73 @@ When `searchMode === "fuzzy"` AND the input is focused AND there's a query AND t
 
 This signals "this mode doesn't fire on keystroke — press Enter to run." (Default modes fire on keystroke; Meaning mode requires explicit Enter because the AI call is non-trivial.)
 
+### Mode-pill click MUST auto-focus the input (v0.4.1)
+
+When the user clicks a mode pill, focus stays on (or returns to) the
+search input. Without this, clicking a mode pill blurs the input,
+which is jarring — especially for Meaning mode where the next user
+action is "press Enter to run."
+
+Pattern:
+
+```tsx
+<button
+  onMouseDown={(e) => e.preventDefault()}  // keep focus through press
+  onClick={() => {
+    setSearchMode(m.v);
+    if (m.v !== "fuzzy") setFuzzyMatchIds(null);
+    searchInputRef.current?.focus();  // explicit re-focus
+  }}
+>
+  {m.short}
+</button>
+```
+
+`onMouseDown.preventDefault()` keeps focus on the input through the
+pill press; `onClick` then explicitly re-focuses. Both are needed —
+the first prevents the blur, the second pre-arms Enter for Meaning
+mode.
+
+Pilot: /todos (`app/todos/page.tsx` ~975+) and /issues (post-v0.4.1
+retrofit). Same fix in any list page with the mode panel.
+
+### Client hay-match applies in BOTH `filter` AND `deep` modes (v0.4.1)
+
+In the `filtered` / `sortedIssues` useMemo, apply hay-match to both
+`filter` and `deep` modes. Fuzzy stays its own branch.
+
+```tsx
+const filtered = useMemo(() => {
+  let pool = items;
+  if (search && (searchMode === "filter" || searchMode === "deep")) {
+    const q = search.toLowerCase().trim();
+    pool = pool.filter((t) => {
+      const hay = [t.title, t.notes || "", /* ... */, t.commentMatch?.snippet || ""].join(" ").toLowerCase();
+      return hay.includes(q);
+    });
+  }
+  if (search && searchMode === "fuzzy" && fuzzyMatchIds) {
+    pool = pool.filter((t) => fuzzyMatchIds.has(t.id));
+  }
+  return pool;
+}, [items, search, searchMode, fuzzyMatchIds]);
+```
+
+**Why both modes:** in All (`deep`) mode the client filter is
+defense-in-depth. Switching modes triggers a refetch (`loadX → URL
+effect → API call`), and between the click and the response the row
+list briefly shows the PREVIOUS mode's data unfiltered — visible
+flash. Hay-match smooths the gap.
+
+**Hay MUST include `commentMatch.snippet`** so server-only comment
+hits remain visible after the fetch returns. Without the snippet in
+hay, a comment-only match disappears the moment the client filter
+runs (because title + notes don't contain the query, only the
+snippet does).
+
+Pilot: /todos and /issues. Sweep target: same fix needed in /rocks,
+/headlines, /meetings list pages, /scorecard list-pages.
+
 ## 4. Fuzzy loading affordance (v0.3.12 + s60 codified)
 
 While the AI call is in flight:

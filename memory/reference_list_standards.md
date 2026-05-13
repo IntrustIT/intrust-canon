@@ -10,7 +10,15 @@
 > - **Pre-flight before any row change ANYWHERE:** open this file + the canonical list page (`/issues`, `/rocks`, etc.) and write down the column order before touching code. After shipping, screenshot the new context next to the canonical list page. Same eye motion to find the same control = pass. Hunt = revert.
 > - Ricky shouldn't have to "do minor placement tweaks" because a row drifted in a new context. The rule is universal, not just for the meeting runner.
 
-**Row 2 order (locked 2026-04-25):** `View ▾  Filters ▾  Find input (with mode pill)  Clear  active chips`. Chips always sit rightmost, after Clear — this lets chips wrap into a second row when the window is narrow without disturbing the core controls.
+**Row 2 order (updated v0.4.1, 2026-05-12):** `[Primary picker ▾] [Archive switch] [Signature switch (page-specific, ≤1)] [Find input (with mode pill)] [Filters ▾ — earned only] [Clear pill — only when off-default] [flex-1 spacer] [⋮ kebab — pinned far right]`. **Active filter chips render in a SEPARATE row BELOW Band 2** — wrap freely without crowding the kebab. The kebab replaces the prior "View ▾" popover (per `reference_list_view_kebab.md`).
+
+**Minimize Band 2 inline aggressively** (v0.4.1). Inline placement requires legitimate practical reason:
+- Primary picker, Archive switch, Search — always inline (the can't-bury items)
+- Page-level AI actions (e.g. Detect Patterns) — Band 1 right-side action cluster, NOT Band 2
+- Signature switch (page's most-flipped binary filter) — ≤1 per page, inline, never duplicates inside Filters popover (the page chooses ONE filter axis to elevate)
+- Everything else — `Filters ▾` popover (earned when 3+ narrow filter axes; if fewer, fold inline or skip the popover entirely)
+
+**Archive switch is exempt from the popover threshold.** Always inline, always binary (Include archive on/off — no tristate). Flipping it swaps the search placeholder to `Search archive…` and renders the row list as archive-only. "Both" is retired.
 
 ## Top-section vertical structure (codified session 48 after audit)
 
@@ -19,7 +27,7 @@
 | # | Band | Contains | Margin to next |
 |---|---|---|---|
 | 1 | **Title row** | H1 (with entity-color stripe) + optional inline subtitle/team-scope suffix + RIGHT-aligned action cluster (toolbar icons + AI buttons + `+ Add <Entity>` brand-blue CTA). | `mb-3` |
-| 2 | **Filters row** | View ▾ / Filters ▾ / Find input (with mode pill) / Clear + active chips. Plus form-property toggles (e.g. `My To-Dos`, `Due to me`, `Stractical only`) inline at the right end. | `mb-3` |
+| 2 | **Filters row** (v0.4.1) | Primary picker / Archive switch / Signature switch (≤1) / Find input / Filters ▾ (earned) / Clear (when off-default) / flex-1 / ⋮ kebab. Active chips render in a separate row BELOW Band 2. | `mb-3` |
 | 3 | **State tabs row** | `All / <Open> / <Done>` buckets with counts. `border-b border-gray-200` rail underneath. | `mb-3` |
 | 4 | **Column-header strip** | `bg-gray-50 rounded-lg px-4 py-1.5 mb-1` strip with sortable headers (`<SortHeader>`) and static column labels. Width tokens line up with row cells per the column-justification rule below. | `mb-1` |
 | 5 | **Row list** | `space-y-1` gap between rows (`reference_list_standards.md` "Row outer chrome" canon). | — |
@@ -102,7 +110,11 @@ Both column-header cells (in Band 4) AND row cells (Band 5) use the same alignme
 
 In order, left to right:
 1. **View ▾ popover** (`components/Popover.tsx`) — contains: Layout picker (list / compact), Sort by (entity-specific keys), Group by (None / Team / Owner / ...per list).
-2. **Filters ▾ popover** with a filter-count badge. Width `280`. Fields appropriate to the entity + **tri-state Archive picker** (Active / Both / Archived — default Active, three-pill segmented control in its own section) + entity-specific "Show <done-state>" toggle (e.g. "Show solved" on /issues, default off) + "Clear all filters" button when any are active.
+2. **Filters ▾ popover** — earned only when the page has 3+ narrow filter axes beyond the always-inline elements (primary picker, Archive, signature switch). Filter-count badge. Width `280`. Fields appropriate to the entity + "Clear all filters" button when any are active.
+
+   **v0.4.1:** Archive is NOT in the Filters popover anymore. It's an inline binary switch in Band 2 (always — exempt from popover threshold). "Both" tristate is retired.
+
+   **v0.4.0:** Entity-specific binary completion toggles like "Show solved" / "Show done" are retired in favor of the binary-status canon — see `reference_status_pill_semantics.md` (Issue binary status section) and `feedback_done_not_done.md`.
 
    **Field shapes — pick by selection cardinality:**
 
@@ -213,7 +225,7 @@ In order, left to right:
    - **Placeholder:** `Find visible…` / `Find anywhere…` / `Find by meaning…` (changes with mode).
    - **By-meaning fires on Enter** in the input itself. The hint inside the popover ("Type your query in the search box + press Enter to match.") wraps in `<AIContextInspector>` so right-click reveals what context the AI uses. **Don't** render a separate "Run fuzzy match" button — it duplicates Enter.
    - **Fuzzy-loading affordance (v0.3.12).** While the AI fuzzy call is in flight, the Find input promotes its border to brand-orange (`border-[#F58326]`) and renders a small inline spinner inside the input (right of the text, left of the mode pill). This is the canonical loading affordance for list-page Find — it's the only place a user knows the AI call is running, since the row list doesn't update until ids return. Brand-orange matches the AI zone (per `reference_color_palette.md`) and parallels the global ⌘K dropdown's "✨ Thinking…" cue (`reference_global_search.md` §6). On response, border returns to default and the row list narrows. **No Band-2 chip** is rendered for fuzzy state — the input itself (query text + Meaning pill + orange treatment) is the indicator. Adding a "AI: query · N matches" chip to Band 2 is off-canon; the row list's narrowed count IS the result count.
-   - **Any analysis button** that lives inside this popover (e.g. "Detect Patterns" on `/issues`) sits in its OWN section below the mode list, separated by `pt-2 mt-2 border-t border-gray-100` and a `text-[10px] font-semibold text-gray-500 uppercase` "Analysis" heading. Each analysis button wraps in its own `<AIContextInspector>`.
+   - **Page-level AI actions** (e.g. "Detect Patterns" on `/issues`) DO NOT live inside this popover. **v0.4.1 update:** they belong in **Band 1's right-side action cluster** (next to `+ Add {Entity}`), styled per `reference_ai_button.md` (orange sparkle pill `✨ {Action}`). Wrapped in `<AIContextInspector>` Full variant when the API consumes org context; Minimal variant when scoped to the current candidate set only (per `reference_ai_context_inspector.md` Variants). Sibling to + Add, not buried under search.
 4. **Clear** button to the RIGHT of the Find input. Only renders when anything is non-default. `resetView()` clears: filters, search query + mode, grouping + collapsed-groups, bulk selection, Row-3 state tab, per-page team override. Preserves view mode + sort preference + Row-1 category tab. **The Clear condition must include the state-tab check** — if the user only deviated by switching the Row-3 tab, Clear still needs to show.
 5. **Active filter chips** (`components/FilterChip.tsx`) — rendered rightmost, after Clear. Click × to clear.
 
