@@ -125,6 +125,30 @@ expects to switch tabs and keep their narrowed view — that's an
 indicator the modes are actually just filters. Re-evaluate the tab
 framing.)
 
+## Search-mode scope across tabs (v0.4.2)
+
+The search modes (per `reference_search_chrome.md`) follow a scope
+ladder that extends across tabs:
+
+| Mode | Scope across tabs |
+|---|---|
+| Current Filters (`filter`) | Active tab only |
+| All (`deep`) | All same-class primary-mode tabs |
+| By meaning (`fuzzy`) | All same-class primary-mode tabs |
+
+Why: the active tab is the user's stated context, but classification
+between primary modes can be fuzzy (Short-Term vs Long-Term issues
+have a judgement-call gray zone). When the user escalates to broader
+search modes, they expect to find matches regardless of tab. The
+narrowest mode (Current Filters) still honors the active tab; the
+broader modes (All + By meaning) escape it.
+
+Cross-tab results render an inline tab badge (`Long-Term`, etc.) on
+the row so the user knows which tab the match lives in. Active-tab
+results render no badge.
+
+See `reference_search_chrome.md` §6b for the rendering spec.
+
 ## Sort + group-by across tabs
 
 Each tab keeps its own sort + group-by preference, persisted to

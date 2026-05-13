@@ -213,6 +213,50 @@ Tooltip on hover: `Matched in comment by {author}`.
 
 **Indicator only fires when comment was the ONLY reason the row matched.** When title or description also matched, the indicator is suppressed (visual clutter rule).
 
+## 6b. Cross-tab scope in All + By-meaning modes (v0.4.2)
+
+When a list page has **primary-mode tabs** (per `reference_primary_mode_tabs.md`) AND the tabs are same-class (same row template, same filter set — i.e. NOT hub-page tabs with different content shapes), the search modes follow this scope ladder:
+
+| Mode | Scope |
+|---|---|
+| Current Filters (`filter`) | Active tab only. Filters + tab define a single narrow slice. |
+| All (`deep`) | **All same-class tabs.** Ignores both filters AND the active primary-mode tab. |
+| By meaning (`fuzzy`) | **All same-class tabs.** Same scope expansion as All; AI ranks across the union. |
+
+**Why this is the rule.** Primary-mode tabs split the entity by an axis the user might be unsure about at the edges (e.g. Short-Term vs Long-Term issues — "stractical-leaning short-term" can read as either depending on context). The user should not be punished for picking the "wrong" tab when searching. The narrowest mode (Current Filters) honors their explicit context; the broader modes (All + By meaning) escape it.
+
+### Cross-tab result rendering
+
+Results from the active tab render as normal rows (no extra chrome).
+Results from a SIBLING primary-mode tab render with an inline **tab badge** on the right side of the row, before the team chip:
+
+```tsx
+<span className="text-[10px] uppercase tracking-wider font-semibold
+                 text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded">
+  Long-Term
+</span>
+```
+
+The badge tells the user which tab the result lives in. Clicking the row opens the editor as normal — the user can switch tabs after if they want to see the row in its native tab.
+
+**Tab badge anatomy:**
+- `text-[10px] uppercase tracking-wider font-semibold` — matches the "Primary" badge style from `reference_searchable_picker.md`
+- `text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded` — neutral background, not entity-tone (tab axis is structural, not status)
+- Label = the sibling tab's full name (`Long-Term`, `Short-Term`, etc.)
+- Rendered ONLY on cross-tab results — active-tab results show no badge
+
+### When NOT to cross tabs
+
+If the page's tabs are hub-page tabs (different content shapes — like /vto Vision/Traction/SWOT) rather than primary-mode tabs, search stays scoped to the active tab. You can't meaningfully search "client" across vision-text and rock-data uniformly.
+
+The cross-tab rule applies ONLY when tabs are same-class (per `reference_primary_mode_tabs.md`).
+
+### Implementation contract
+
+- Backend (`/api/{entity}/route.ts` deep search) — accept the active-tab param but ignore it in `deep` and `fuzzy` modes. Return entities from all primary-mode tabs.
+- Each returned row carries its tab affinity (`tab: "short-term" | "long-term"` or similar) so the client can render the badge.
+- Frontend — render the badge in row JSX when `row.tab !== activeTab` AND `searchMode !== "filter"`.
+
 ## 7. Archive rows in All / By-meaning modes — opacity fade
 
 When the user runs All or Meaning mode, archived items are included in the result set (the mode broadens scope past current filters). Archived rows render at **`opacity-45`** on the entire row container — stripe + title + avatars + everything. The visual fade tells the user "this matched but it's archived." Stripe color stays entity-hue (per `reference_stripe_system.md`); the fade is uniform on top.

@@ -17,6 +17,29 @@ Run the greps as a starting checklist, then read the actual code at each hit to 
 
 ---
 
+## Sweep methodology — scaffold-from-pilot (v0.4.2)
+
+**Canonical strategy when retrofitting a list-page against canon: copy from the pilot, then modify what genuinely differs.**
+
+The previous "surgical edits against existing code + apply each canon rule" approach is unreliable. Canon rules require interpretation; existing code has its own drift. Composing 20+ rules against drifted code means agents pick the wrong rule, miss a rule, or land different visuals on different pages. We saw this fail on /issues during the v0.4.1 sweep — multiple iterations + screenshot rounds before convergence.
+
+**The scaffold-from-pilot approach:**
+
+1. **Identify the pilot.** For OS list pages, the pilot is `app/todos/page.tsx`. For OS entity editors, the pilot is `components/TodoDetailEditor.tsx`. For Playbook (when its canon arrives), pick a Pb-specific pilot — usually `/content` list.
+2. **Copy the pilot file verbatim** as the new page's starting structure.
+3. **Replace entity-specific strings** — `todo` → `issue`, "To-Dos" → "Issues", etc. Use grep + replace; don't hand-rewrite.
+4. **Apply per-entity exceptions explicitly** documented in canon (e.g. /issues has no due-date column per `reference_list_row_column_order.md` /issues exception clause).
+5. **Add page-distinctive features** (primary-mode tabs, persistent sections, AI page actions, filter axes) by porting from existing source code INTO the scaffold — not the other way around.
+6. **Diff-check against pilot** before committing. Any unintended divergence in chrome (Band 2 spacing, kebab shape, search input padding) is drift. Fix to match pilot.
+
+**Why this works.** Pixel-level fidelity comes from byte-level copy. The pilot already encodes every canon rule in working code. The agent doesn't have to interpret "kebab placement" or "filter view sizes" — they're literally /todos until proven otherwise.
+
+**Failure mode to avoid: pilot drift.** The pilot ITSELF can drift from canon over time. Before sweeping other pages from the pilot, verify the pilot is conformant. A pilot audit pass — sweep the pilot against its own canon — is recommended whenever (a) the pilot hasn't been audited recently, OR (b) the canon has shifted since the last pilot audit. Don't propagate pilot drift to N pages.
+
+---
+
+---
+
 ## category: drift
 
 ### D1. Inline `<svg><path d="..."/></svg>` instead of Lucide
@@ -249,6 +272,38 @@ Run the greps as a starting checklist, then read the actual code at each hit to 
 - **Replacement:** Remove the Filters popover; inline the narrow filters in Band 2 between Search and the kebab.
 - **Test (intent-based, not numeric):** Is Band 2 starting to feel crowded? If no, no popover.
 - **Pilot (v0.4.1):** /todos has zero narrow filter axes — no popover, all inline. /issues has Raised by + Need + Direct Reports = popover earned.
+
+### D31. State tabs surviving alongside primary-mode tabs
+- **What it is:** A list page has primary-mode tabs (Short-Term / Long-Term, etc.) AND ALSO renders a state-tab row (Unresolved / Resolved / All, or Done / Not Done / All, etc.) between Band 2 and the column headers.
+- **Why it's drift:** v0.4.0 killed state tabs entirely; v0.4.1 reinforced binary status with RowStateCircle as the only state toggle. When primary-mode tabs are added per v0.4.1, the old state tabs MUST come out — they're stale chrome from the pre-canon shape.
+- **Replacement:** Delete the state-tab row JSX. Column headers strip directly follows Band 2.
+- **Spotting it (visual):** Looks like a horizontal row of small tab links between the Band 2 filter row and the table column headers (PRI / TITLE / etc.). If you can see something like `Unresolved 18 | Resolved 0 | All 18` on a v0.4.1-conformant page, it's drift.
+- **Found in:** /issues during v0.4.1 retrofit (first pass) — the agent added primary-mode tabs but didn't remove the existing state-tab row.
+
+### D32. Kebab rendered as a split button `[⋮▾]` instead of plain `[⋮]`
+- **What it is:** The Band 2 ⋮ kebab button has a separate dropdown chevron next to it, making it look like a split-button `[⋮▾]` rather than a single button.
+- **Why it's drift:** Per `reference_list_view_kebab.md`. The kebab is a single trigger button — `<MoreVertical className="w-4 h-4" />` only. No chevron, no split-button shape.
+- **Replacement:** Remove the chevron / split-button container. The MoreVertical icon IS the trigger.
+- **Grep:** `grep -nE 'MoreVertical|ChevronDown' app/**/*page.tsx` then visually verify the kebab renders as a single button.
+- **Found in:** /issues during v0.4.1 retrofit — agent rendered the kebab inside a wrapper that added a chevron.
+
+### D33. Chrome size/padding drift from pilot
+- **What it is:** Band 2 controls (filter pills, search input, kebab, etc.) render at different sizes or padding than the equivalent /todos pilot elements. Common drifts: bigger search input width, more vertical padding on pills, different border-radius on the kebab.
+- **Why it's drift:** Per the scaffold-from-pilot methodology at the top of this doc. Pixel-level fidelity comes from byte-level copy. If a page's Band 2 doesn't visually match /todos at a glance, the chrome has drifted.
+- **Replacement:** Open `app/todos/page.tsx` and `app/{entity}/page.tsx` side-by-side. Diff the JSX of Band 1, Band 2, kebab, row template. Mirror /todos verbatim except for entity-specific strings and per-entity exceptions documented in canon.
+- **Spotting it (visual):** The page's Band 2 feels "off" compared to /todos — a control is slightly wider, slightly taller, has different border weight. Side-by-side screenshots make it obvious.
+- **Test:** Compare to `/todos` in two browser windows. Anything that doesn't match without a canon-documented reason is drift.
+- **Found in:** /issues during v0.4.1 retrofit — Raised-by picker width, Archive switch shape, kebab placement.
+
+### D34. Cross-tab search scope wrong (or missing) on pages with primary-mode tabs
+- **What it is:** A list page with primary-mode tabs (Short-Term / Long-Term, etc.) has search modes that:
+  - Stay scoped to the active tab in All / By-meaning modes (should broaden across tabs per v0.4.2)
+  - OR broaden in Current Filters mode (should stay scoped per v0.4.2)
+  - OR don't render tab badges on cross-tab results (the user can't tell which tab a match lives in)
+- **Why it's drift:** Per `reference_search_chrome.md` §6b (v0.4.2). Primary-mode tabs split entities by an axis users may be unsure about at the edges; the broadest search modes (All + By meaning) must escape that ambiguity and return results from all same-class tabs. Current Filters mode honors the user's explicit context and stays scoped.
+- **Replacement:** Backend deep-search route accepts active-tab param but ignores it for `deep` + `fuzzy` modes. Each returned row carries its tab affinity. Frontend renders inline tab badge when `row.tab !== activeTab AND searchMode !== "filter"`.
+- **Doesn't apply to:** Hub-page tabs (different content shapes per tab — /vto Vision/Traction/SWOT). Search there stays scoped per-tab.
+- **Pilot (v0.4.2):** /issues post-retrofit. Sweep target: any future list page that adopts primary-mode tabs.
 
 ---
 
