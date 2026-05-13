@@ -71,9 +71,67 @@ Earlier /issues drift rendered strategic targets as colored pills (`bg-blue-100 
 - The breadcrumb idiom is well-established (file paths, browser nav) — users recognize blue text as "links to elsewhere."
 - Removes a column from the row, which is always a win.
 
+### Parent-type inheritance signal (v0.4.7) — glyph inline in the breadcrumb
+
+When a child row's parent-link points to a parent that carries a
+canonical **type-glyph** (per `reference_icon_vocabulary.md` +
+`reference_issue_type_spectrum.md`), the breadcrumb renders that
+glyph inline ahead of the parent title:
+
+```
+⚡ Contract renewal negotiation ›
+```
+
+The glyph signals "the parent is type X" at a glance without
+re-classifying the child. Per `feedback_types_live_on_containers.md`,
+types live on containers; children inherit strategic weight through
+the breadcrumb relationship, not via their own type field.
+
+**Glyph set (initial v0.4.7 coverage — extend as parent types grow):**
+
+| Parent entity type | Glyph | Source |
+|---|---|---|
+| Issue: Stractical | ⚡ | `reference_issue_type_spectrum.md` |
+| Issue: Short-Term | ⏱ | `reference_issue_type_spectrum.md` |
+| Issue: Long-Term | 🔭 | `reference_issue_type_spectrum.md` |
+| Rock | 🪨 | `reference_icon_vocabulary.md` |
+| Milestone | (none — inherits rock context via chain) | — |
+| Headline (Win) | 🏆 | `reference_icon_vocabulary.md` |
+| Headline (FYI) | 📢 | `reference_icon_vocabulary.md` |
+| Todo (as parent of another todo, rare) | ✅ | `reference_icon_vocabulary.md` |
+
+**Locked rendering inside the breadcrumb span:**
+
+```tsx
+<span className="inline-flex items-center gap-1 text-xs text-[#0069AA]">
+  <span aria-hidden>{parentTypeGlyph}</span>
+  <span className="truncate">{parentTitle}</span>
+  <ChevronRight className="w-3 h-3 text-gray-400" />
+</span>
+```
+
+The glyph stays in blue text color (no color override) — it's read
+as part of the link, not a separate badge. Glyphs are emoji per
+`reference_icon_vocabulary.md`; tooltips on the breadcrumb already
+explain the relationship ("Stractical Issue: …").
+
+**Why no column for parent type:**
+
+Parent-type isn't sort/compare data — it's *relationship context*.
+Putting it in a column would double-encode the breadcrumb. If users
+want to cluster atomic actions by parent type ("all my Stractical-
+anchored todos together"), that's a **Group-by option in the ⋮ view
+kebab**, not a column.
+
 ### When the link is the basis for a derived flag (e.g. /issues "stractical")
 
-The derived flag stays as its own slot (the ⚡ glyph for stractical on /issues). The parent-link breadcrumb above the title carries the WHY (which rock/goal triggered the flag). Don't render the link twice.
+For /issues specifically, the row's own type-stripe (striped pattern
+for Stractical per `reference_issue_type_spectrum.md`) already encodes
+the issue's type — the breadcrumb on an issue row points to *the
+issue's parent rock/goal*, not back to itself. The ⚡ glyph in the
+breadcrumb only appears on child rows where the parent IS a Stractical
+issue (per the inheritance rule above). Don't render the parent-link
+twice — once is enough.
 
 Example /issues row block structure (v0.4.4):
 
@@ -139,8 +197,9 @@ Tail order for issue rows:
 
 - The state circle is the open/resolved toggle (no status pill).
 - The stractical glyph (⚡) marks issues that bridge operational +
-  strategic — surfaced as a row indicator AND as a persistent-section
-  grouping (see `reference_persistent_section_grouping.md`).
+  strategic. Surfaced as a row indicator. On /issues, Stractical is
+  also default-grouped via the ⋮ view kebab Group-by = Type — see
+  `reference_issue_type_spectrum.md`.
 - "Need" is the issue's intent-bucket (raised vs identified vs
   routed) — small pill in the indicators slot.
 - Created/age uses `formatEventDate` (per field-notes D9b), NOT

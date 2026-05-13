@@ -253,16 +253,12 @@ The previous "surgical edits against existing code + apply each canon rule" appr
 - **Test:** Does the page have sub-types where users (a) have the same row template + filters, (b) shift mental mode between sub-types, (c) commit to one for a session? → Primary-mode tabs.
 - **Pilot (v0.4.1):** /issues Short-Term | Long-Term. Sweep target: /headlines (Wins / FYIs?), /scorecard if metric flavors warrant.
 
-### D28. Persistent attribute section rolled as dynamic group-by entry
-- **What it is:** A page hides a section that should be persistent (always at top or bottom — Stractical issues, Pinned items) inside the user's optional Group-by selector. User has to actively pick a Group-by entry to see the bucket; otherwise it's mixed in.
-- **Why it's drift:** Per `reference_persistent_section_grouping.md` v0.4.1. Persistent sections render their attribute grouping unconditionally — they're not user-driven.
-- **Replacement:** Implement the section as always-rendered at its declared position. User can collapse but not remove. Filters apply to both the section and the main pile; section opts out of dynamic group-by per its declared sort/group contract.
-- **Pilot (v0.4.1):** /issues Short-Term tab Stractical section. Sweep target: /headlines (Pinned section if pinning ships), other lists with always-on attribute sections.
-- **NOT a pilot — common false assumption:** /todos has NO persistent Done section. Completed todos render inline, governed by normal filters/sort. Don't read /todos as a Done-section pilot, and don't propagate one.
+### D28. (Retired v0.4.7) Persistent attribute section pattern
+Retired 2026-05-13. The persistent-section-with-identity-chrome pattern was retired (the only pilot was /issues Stractical, replaced with default Group-by + parent-link glyph inheritance per `feedback_types_live_on_containers.md` + `reference_list_row_column_order.md`). If a future feature (Pinned items, etc.) revives the need, codify fresh canon then.
 
 ### D29. Signature filter duplicated inline AND inside Filters popover
-- **What it is:** A page's signature filter (e.g. "Stractical only" on /issues) renders BOTH as an inline Band-2 control AND as an entry inside the Filters popover. User sees the same toggle twice; can't tell which is canonical.
-- **Why it's drift:** Per `reference_list_standards.md` v0.4.1 Band-2 update. Each page picks ONE signature inline filter beyond the always-inline elements; that filter NEVER duplicates in the popover. (Stractical specifically resolves to persistent-section grouping, not signature switch — see `reference_persistent_section_grouping.md`.)
+- **What it is:** A page's signature filter renders BOTH as an inline Band-2 control AND as an entry inside the Filters popover. User sees the same toggle twice; can't tell which is canonical.
+- **Why it's drift:** Per `reference_list_standards.md` v0.4.1 Band-2 update. Each page picks ONE signature inline filter beyond the always-inline elements; that filter NEVER duplicates in the popover.
 - **Replacement:** Pick one home. If the filter earns "signature" status (highly-flipped, mode-defining binary), inline only — remove from popover. If it doesn't earn signature status, popover only — remove from inline.
 - **Grep:** Visually check Band 2 inline switches and the Filters popover content per page. Duplicates jump out.
 - **Pilot (v0.4.1):** /issues had "Stractical only" duplicated pre-retrofit; resolved by moving Stractical to persistent-section grouping (no switch).

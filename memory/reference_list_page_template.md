@@ -226,29 +226,9 @@ Per `reference_list_standards.md` v0.4.1 + v0.4.2 updates.
 
 **Active filter chips** wrap to a SEPARATE row BELOW Band 2 — never crowd the kebab. Chip wrap geometry: `flex flex-wrap gap-2 mb-3`.
 
-### 4. Persistent section (OPTIONAL — top of list or bottom)
+### 4. (Retired v0.4.7) Persistent section
 
-Per `reference_persistent_section_grouping.md`. Examples: Stractical at top of /issues Short-Term tab; Done at bottom of /todos.
-
-```tsx
-{persistentSection.items.length > 0 && (
-  <>
-    <button
-      onClick={() => toggleSection(persistentSection.id)}
-      className="w-full bg-gray-50 px-3 py-2 rounded-md text-xs text-gray-500 font-medium flex items-center gap-2 hover:bg-gray-100"
-    >
-      {collapsed[persistentSection.id] ? <ChevronRight className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
-      {persistentSection.label}
-      <span className="text-gray-400">({persistentSection.items.length})</span>
-    </button>
-    {!collapsed[persistentSection.id] && persistentSection.items.map((item) => (
-      <ListRow key={item.id} item={item} />
-    ))}
-  </>
-)}
-```
-
-Persistent sections opt out of dynamic group-by; respect filters; declare their own sort contract.
+The always-on attribute section pattern (Stractical-at-top, Done-at-bottom, etc.) was retired in v0.4.7. The use case it solved on /issues is now handled by default Group-by = Type in the ⋮ view kebab + the parent-type inheritance signal on the breadcrumb (per `reference_list_row_column_order.md`). Skip this slot when scaffolding a new list page.
 
 ### 5. Column header strip (Band 4)
 
@@ -482,7 +462,6 @@ When creating or retrofitting a list page:
 - `reference_search_chrome.md` — Find input + three modes + cross-tab scope
 - `reference_team_picker.md` — H1 scope picker option order + "Private" lock
 - `reference_primary_mode_tabs.md` — when to add tabs + filter scope behavior
-- `reference_persistent_section_grouping.md` — Stractical + Done section pattern
 - `reference_list_view_kebab.md` — ⋮ kebab content + layout
 - `feedback_canonical_role_labels.md` — Responsible / Raised by / Shared by / Delegated to / Due to
 - `feedback_unsaved_guard_semantics.md` — editor close-path semantics

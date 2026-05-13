@@ -32,9 +32,9 @@ Yes/yes/yes → primary-mode tabs.
 Issues split into:
 
 - **Short-Term** — operational, reviewed weekly in L10. Bridges include
-  stractical (high-impact short-term) which renders as a persistent
-  section at the top of the Short-Term tab — see
-  `reference_persistent_section_grouping.md`.
+  stractical (high-impact short-term) which surfaces via default
+  Group-by = Type on the Short-Term tab (Stractical bucket first).
+  See `reference_issue_type_spectrum.md` + `reference_list_view_kebab.md`.
 - **Long-Term** — strategic, reviewed quarterly / annually.
 
 Same row template (`reference_list_row_column_order.md`), same filter
@@ -180,5 +180,4 @@ The tab order encodes the canonical workflow — don't sort alphabetically.
 
 - `reference_hub_page.md` — different content shapes per tab (don't confuse)
 - `reference_list_standards.md` — Band 1 / Band 2 anatomy
-- `reference_persistent_section_grouping.md` — Stractical at top of Short-Term tab
 - `feedback_meeting_runner_consistency.md` — outside-meeting must mirror inside-meeting

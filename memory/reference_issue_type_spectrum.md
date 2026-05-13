@@ -47,6 +47,14 @@ When adding a new surface that distinguishes issue Types, match the spectrum exa
 
 ⏱ ↔ 🔭 mirror each other semantically (near-sighted vs far-sighted).
 
+## How Stractical surfaces on /issues (v0.4.7)
+
+Stractical items earn visibility on /issues via **default Group-by = Type** in the ⋮ view kebab. The Short-Term tab default-groups: Stractical first, Short-Term second. Stractical-anchored todos / linked entities surface the ⚡ glyph inline in their parent-link breadcrumb per `reference_list_row_column_order.md` v0.4.7 inheritance signal.
+
+Previously (v0.4.1–v0.4.6) /issues used a persistent Stractical section at the top of the Short-Term tab. That pattern was retired v0.4.7 — too heavy for the visibility lift it delivered (local-only, didn't reach users who live on /todos or /dashboard). Group-by + inheritance signal carries the weight more cheaply.
+
+The ⚡ glyph still has its own slot on issue rows (per row template), but inside a Group-by Stractical bucket on /issues, it's already implied by the bucket header — render conditionally or omit; double-encoding is the only thing to avoid.
+
 ## What NOT to do
 
 - Don't introduce a new color for any of the 3 Types. The spectrum is closed.
