@@ -295,6 +295,13 @@ The previous "surgical edits against existing code + apply each canon rule" appr
 - **Test:** Compare to `/todos` in two browser windows. Anything that doesn't match without a canon-documented reason is drift.
 - **Found in:** /issues during v0.4.1 retrofit — Raised-by picker width, Archive switch shape, kebab placement.
 
+### D35. Parent-link rendered as column pill instead of blue text above title
+- **What it is:** A row's parent or linked-context (rock parent of a todo; strategic targets on /issues; sibling links) renders as a colored pill in its own column instead of as blue breadcrumb text inside the title slot.
+- **Why it's drift:** Per `reference_list_row_column_order.md` v0.4.4. Parent-link is *context* for the title and belongs visually adjacent to it. Pills in a dedicated column separate context from content AND compete with other row indicators. The blue-breadcrumb idiom is well-established and saves a column slot.
+- **Replacement:** Move the parent-link rendering INTO the title slot, above the title text. Locked shape: `<div className="mb-0.5"><Tooltip ...><span className="inline-flex items-center gap-1 text-xs text-[#0069AA]">...</span></Tooltip></div>`. Hierarchical chains use `<ChevronRight className="w-3 h-3 text-gray-400" />` between segments; peer-links use `·` middle-dot. Remove the column from the row + the column header from the header strip.
+- **Pilot (v0.4.4):** /todos rock+milestone breadcrumb at `app/todos/page.tsx:1474-1489`. Sweep target: /issues strategic targets (currently rendered as `bg-blue-100`/`bg-indigo-100` pills inside a STRACTICAL column — refactor to blue text above title; ⚡ glyph slot stays as the derived-flag indicator).
+- **Doesn't apply to:** Derived flags that are conceptually distinct from the link (e.g. /issues ⚡ stays in its own slot as a boolean indicator). Only the link representation itself moves; flags driven BY the link stay where they are.
+
 ### D34. Cross-tab search scope wrong (or missing) on pages with primary-mode tabs
 - **What it is:** A list page with primary-mode tabs (Short-Term / Long-Term, etc.) has search modes that:
   - Stay scoped to the active tab in All / By-meaning modes (should broaden across tabs per v0.4.2)

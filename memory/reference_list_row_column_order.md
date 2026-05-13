@@ -21,14 +21,76 @@ Every list-page row reads left to right in the same slot order. Slots are option
 | 1 | **Bulk select** | `w-4` | Selection is the leftmost ambient action — read-then-act, like "check the items you want." Far-left is the universal selection home (Gmail, Linear, Notion). |
 | 2 | **Drag handle ⠿** | `w-4` | Reorder grip sits adjacent to selection — both are row-level affordances acting on the row itself. Visible only when sortable; opacity-30 → 100 on hover (per `reference_drag_reorder.md`). |
 | 3 | **State circle** | `w-5` | The done/not-done toggle (`<RowStateCircle>` for /todos, status icon for /issues, etc.). Immediately precedes the title so the eye reads "state + title" as a unit. |
-| 4 | **TITLE (flex-1)** | grow | The row's primary content. Grows to fill available width; description/notes wrap below on one line truncated. Click → open editor (per `reference_entity_edit_affordance.md`). |
-| 5 | **Indicators** | auto | Comment count, linked-item count, spawn markers, comment-search hit indicator. Sit *after* the title because they're meta-about-the-title, not separate columns. Each is icon+number, no pill chrome (per `reference_status_pill_semantics.md`). |
+| 4 | **TITLE (flex-1)** | grow | The row's primary content. Grows to fill available width. Block structure inside the title slot (v0.4.4): **(1) Parent-link breadcrumb** above the title — `text-xs text-[#0069AA]` blue text, hierarchical with chevron-separator for parent→child (rock › milestone) or dot-separator for peer-links (rock 1 · rock 2 · goal). **(2) Title** itself — `text-sm font-medium`, click → open editor. **(3) Description/notes** preview wrapped below, one line truncated. See "Parent-link rendering" section below for full spec. |
+| 5 | **Indicators** | auto | Sit *after* the title because they're meta about the title, not separate columns. Two flavors with different chrome rules (v0.4.4):<br>**Icon-counted** (count is the data, icon is the label): `🔗 3`, `💬 5`, `↗ 2`. NO pill chrome — bare icon + number.<br>**Textual** (text is the label): Need pill, source tag, Lead/Lag, tab badge. Standard `text-[10px] px-1.5 py-0.5 rounded[-full] bg-{neutral\|hued}` pill chrome. Per `reference_status_pill_semantics.md`. |
 | 6 | **Resp-A** (primary responsibility) | `w-14` | Who's on the hook — typically `<UserAvatar role="Responsible" \| "Raised by" \| ...>` for a person, OR `<TeamChip>` when a whole team carries primary responsibility. Full opacity. Per `feedback_canonical_role_labels.md` for the role label. |
 | 7 | **Resp-B** (secondary recipient / delegate) | `w-14` | Optional second slot — typically `role="Due to"` for /todos (the recipient of the output), a delegate, or a secondary team. Renders at `opacity-70` to encode secondary-ness visually. Person OR team — both shapes valid. |
 | 8 | **Date** | `w-24` | Due date (or status date). Right-justified text. Goes through `formatDueDate` (per `reference_date_format.md`); color rules in caller. |
 | 9 | **Team** | `w-20` | `<TeamChip>` (or Private lock icon if visibility=private). Last because team is the **least-additive column when the user has already scoped to one team** — for the most common view, every row repeats the same team, so putting it last preserves prime title-side real estate. |
 
 The visual stripe (left side of the row, depth-keyed per entity) sits OUTSIDE this slot grid — it's row chrome, not a column. See `reference_stripe_system.md`.
+
+## Parent-link rendering (v0.4.4) — blue text above title, never a column pill
+
+When a row has a parent or linked-context relationship that's worth surfacing on the row (rock parent of a todo; rock+milestone hierarchy; rock or vto-goal that makes an issue stractical; etc.), render the link as **blue breadcrumb text above the title** — NOT as a pill in a separate column.
+
+**Locked shape:**
+
+```tsx
+<div className="mb-0.5">
+  <Tooltip text="...">
+    <span className="inline-flex items-center gap-1 text-xs text-[#0069AA]">
+      {/* segments — see below */}
+    </span>
+  </Tooltip>
+</div>
+<span className="text-sm font-medium text-gray-800">
+  {title}
+</span>
+```
+
+**Segment rules:**
+
+- **Hierarchical parents** (the link IS a parent-of relationship): segments separated by chevron `<ChevronRight className="w-3 h-3 text-gray-400" />`. Example: `Rock Title › Milestone Title` for a todo linked to a rock + milestone.
+- **Peer links** (multiple non-hierarchical links to siblings — e.g. an issue linked to 2 rocks): segments separated by `·` middle-dot in `text-gray-400`. Example: `Rock 1 · Rock 2 · Goal X`.
+- **Mixed** (parent-child plus a peer): chevron for the parent chain, dot for additional peers. Surface as `Rock › Milestone · Other Rock` if it happens (rare).
+- **Truncate long titles** at ~28 chars per segment (or apply CSS truncation on the segment span).
+
+**Color: brand-blue `text-[#0069AA]` always.** The blue tells the user "these are links" without further chrome. No background, no border, no pill.
+
+**Tooltip wrapper** on the whole breadcrumb block: shows the full unabbreviated relationship text (e.g. `Rock: Long Rock Name · Milestone: Long Milestone Name`).
+
+**Click target:** the whole breadcrumb is clickable as a single link to the parent entity. For multi-segment hierarchies, the deepest segment is the primary target (clicking opens the milestone editor, not the rock). For peer links with multiple items, decide per-page whether the breadcrumb opens the first peer or surfaces a popover with all peers.
+
+### Why not a pill in its own column
+
+Earlier /issues drift rendered strategic targets as colored pills (`bg-blue-100 text-blue-700` / `bg-indigo-100 text-indigo-700`) inside a dedicated STRACTICAL column. Off-canon as of v0.4.4 — replaced with the title-area blue breadcrumb. Reasons:
+
+- The link IS context for the title. Putting it 100px to the right separates context from content.
+- Pills compete visually with other indicators (status pills, type pills) and create chrome noise.
+- The breadcrumb idiom is well-established (file paths, browser nav) — users recognize blue text as "links to elsewhere."
+- Removes a column from the row, which is always a win.
+
+### When the link is the basis for a derived flag (e.g. /issues "stractical")
+
+The derived flag stays as its own slot (the ⚡ glyph for stractical on /issues). The parent-link breadcrumb above the title carries the WHY (which rock/goal triggered the flag). Don't render the link twice.
+
+Example /issues row block structure (v0.4.4):
+
+```
+[bulk] [drag] [state ○]   ┌─ ⚡   ─┐  [Need] [Resp-A] [age] [team]
+                          │      │
+                          │  Rock Title · Goal Title             ← blue breadcrumb above title
+                          │  Issue title goes here               ← title
+                          │  notes preview...                    ← optional
+                          └──────┘
+```
+
+⚡ glyph indicator slot stays. STRACTICAL column-with-pills retires. Linked rocks/goals move into the title slot as blue text.
+
+### When the row has no parent-link
+
+The breadcrumb block doesn't render. The title sits at the top of its slot. No empty placeholder, no `mb-0.5` left dangling.
 
 ## Resp-A vs Resp-B — opacity rule
 

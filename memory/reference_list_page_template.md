@@ -259,8 +259,8 @@ Per `reference_list_row_column_order.md` — order MUST match `[bulk][drag][stat
   <div className="w-4" /> {/* bulk */}
   <div className="w-4" /> {/* drag */}
   <div className="w-5" /> {/* state */}
-  <SortHeader sortKey="title" className="flex-1">Title</SortHeader>
-  <div className="w-auto" /> {/* indicators */}
+  <SortHeader sortKey="title" className="flex-1 text-left">Title</SortHeader>
+  <div className="w-auto" /> {/* indicators — no header label, inline meta */}
   <SortHeader sortKey="{responsibilityFieldName}" className="w-14 text-center">{RoleLabel}</SortHeader>
   {hasRespB && <SortHeader sortKey="{respBField}" className="w-14 text-center">{RespBLabel}</SortHeader>}
   <SortHeader sortKey="{dateFieldName}" className="w-24 text-right">{Date Column Name}</SortHeader>
@@ -268,46 +268,133 @@ Per `reference_list_row_column_order.md` — order MUST match `[bulk][drag][stat
 </div>
 ```
 
+### Header ↔ row alignment — STRICT MATCH
+
+Header strip and row template MUST use the SAME alignment, gap, padding, and column widths. Any drift here causes visible vertical misalignment between column labels and the data below them.
+
+**Locked across header AND row:**
+- Outer container: `flex items-center gap-2 px-3` — `items-center` is mandatory (vertical center), `gap-2` matches, `px-3` matches.
+- Vertical padding: header uses `py-2`; row uses `py-3` (List) or `py-1.5` (Compact). The vertical CENTER of each is what aligns with `items-center` — different paddings still center-align cleanly.
+- Per-column widths: every `w-{N}` declaration on a header column MUST match the same `w-{N}` on the corresponding row cell. Example: header has `w-14 text-center` for Resp-A → row has `w-14 flex-shrink-0 flex items-center justify-center` for Resp-A.
+- Per-column text alignment: `text-left` for title; `text-center` for avatars / pills / boolean indicators; `text-right` for numeric + date columns. The header `text-{align}` MUST match the row's content alignment.
+
+**Anti-pattern checklist:**
+- `items-start` on either header or row → vertical drift
+- Mismatched gap or padding → horizontal drift
+- Header `w-12` + row `w-14` → column misalignment
+- `text-left` on header + centered avatar in row → label sits left of the avatars below it
+
+When the column strip and the rows don't line up, this is the first place to look.
+
 ### 6. List rows
 
 Per `reference_list_row_column_order.md` row template. Each row matches the column header order. Row template:
 
 ```tsx
-<ListRow>
-  <Checkbox /> {/* bulk */}
-  <DragHandle /> {/* drag (optional) */}
-  <RowStateCircle done={item.done} onToggle={...} tooltip={...} />
+<div className="flex items-center gap-2 px-3 py-3 hover:bg-gray-50 cursor-pointer">
+  <Checkbox className="w-4" />
+  <DragHandle className="w-4" /> {/* optional */}
+  <RowStateCircle done={item.done} onToggle={...} tooltip={...} className="w-5" />
+
+  {/* Title block — flex-1, contains breadcrumb + title + notes + commentMatch */}
   <div className="flex-1 min-w-0">
-    <div className="font-medium text-gray-900">{item.title}</div>
-    {item.notes && <div className="text-xs text-gray-500 truncate">{item.notes}</div>}
+    {/* Parent-link breadcrumb (v0.4.4) — blue text ABOVE title, NEVER a pill */}
+    {item.parentLinks && item.parentLinks.length > 0 && (
+      <div className="mb-0.5">
+        <Tooltip text={item.parentLinks.map(p => `${p.type}: ${p.title}`).join(" · ")}>
+          <span className="inline-flex items-center gap-1 text-xs text-[#0069AA]">
+            {item.parentLinks.map((p, i) => (
+              <Fragment key={p.id}>
+                {i > 0 && (
+                  p.relation === "child" /* hierarchical */
+                    ? <ChevronRight className="w-3 h-3 text-gray-400" />
+                    : <span className="text-gray-400">·</span> /* peer */
+                )}
+                <span>{p.title}</span>
+              </Fragment>
+            ))}
+          </span>
+        </Tooltip>
+      </div>
+    )}
+
+    {/* Title */}
+    <span className={cn("text-sm font-medium", item.done ? "line-through text-gray-400" : "text-gray-800")}>
+      <Highlight text={item.title} queries={searchHighlight} />
+    </span>
+
+    {/* Notes preview */}
+    {item.notes && !compact && (
+      <p className="text-xs text-gray-500 truncate mt-0.5 max-w-[280px]">
+        <Highlight text={item.notes} queries={searchHighlight} />
+      </p>
+    )}
+
+    {/* Comment-search hit indicator */}
     {item.commentMatch && (
-      <div className="flex items-center gap-1 text-[10px] text-gray-400">
+      <div className="flex items-center gap-1 text-[10px] text-gray-400 mt-0.5">
         <MessageCircle className="w-3 h-3" />
-        <Highlight text={item.commentMatch.snippet} highlight={search} />
+        <Highlight text={item.commentMatch.snippet} queries={[search]} />
       </div>
     )}
   </div>
-  <Indicators item={item} />
-  <UserAvatar name={item.{responsibility}?.name} role="{RoleLabel}" size="sm" />
+
+  {/* Indicators slot — two types per v0.4.4 */}
+  <div className="flex items-center gap-1.5">
+    {/* Icon-counted indicators — bare icon + number, NO pill chrome */}
+    {item.linkedCount > 0 && (
+      <span className="flex items-center gap-0.5 text-[10px] text-gray-400">
+        <Link className="w-3 h-3" /> {item.linkedCount}
+      </span>
+    )}
+    {item.commentCount > 0 && (
+      <span className="flex items-center gap-0.5 text-[10px] text-gray-400">
+        <MessageCircle className="w-3 h-3" /> {item.commentCount}
+      </span>
+    )}
+    {/* Textual indicators — pill chrome */}
+    {item.need && (
+      <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-[#0069AA]/8 text-[#0069AA] capitalize">
+        {item.need.label}
+      </span>
+    )}
+  </div>
+
+  {/* Resp-A — primary responsibility, full opacity, shape encodes type */}
+  <div className="w-14 flex-shrink-0 flex items-center justify-center">
+    {item.{responsibility}Type === "team"
+      ? <TeamChip team={item.{responsibility}} size="sm" />
+      : <UserAvatar name={item.{responsibility}?.name} role="{RoleLabel}" size="sm" />
+    }
+  </div>
+
+  {/* Resp-B — optional, opacity-70 */}
   {hasRespB && (
-    item.{respB}Type === "team"
-      ? <TeamChip team={item.{respB}} size="sm" className="opacity-70" />
-      : <UserAvatar name={item.{respB}?.name} role="{RespBLabel}" size="sm" className="opacity-70" />
+    <div className="w-14 flex-shrink-0 flex items-center justify-center">
+      {item.{respB}Type === "team"
+        ? <TeamChip team={item.{respB}} size="sm" className="opacity-70" />
+        : <UserAvatar name={item.{respB}?.name} role="{RespBLabel}" size="sm" className="opacity-70" />
+      }
+    </div>
   )}
+
+  {/* Date — right-aligned numeric */}
   <span className="w-24 text-right text-xs">{formatDate(item.{dateField}).label}</span>
-  <div className="w-20 flex justify-center">
+
+  {/* Team / Private — center-aligned */}
+  <div className="w-20 flex items-center justify-center">
     {item.visibility === "private"
-      ? <Tooltip text="Private"><Lock /></Tooltip>
+      ? <Tooltip text="Private"><Lock className="w-3.5 h-3.5" /></Tooltip>
       : item.team && <TeamChip team={item.team} size="sm" />}
   </div>
 
-  {/* Cross-tab badge — render only if result is from a sibling primary-mode tab */}
+  {/* Cross-tab badge (v0.4.2) — only when row is from a sibling primary-mode tab */}
   {row.tab !== activeTab && searchMode !== "filter" && (
     <span className="text-[10px] uppercase tracking-wider font-semibold text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded">
       {siblingTabLabel}
     </span>
   )}
-</ListRow>
+</div>
 ```
 
 ---
