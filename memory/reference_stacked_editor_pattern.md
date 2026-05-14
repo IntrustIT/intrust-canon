@@ -62,6 +62,42 @@ Locked rules:
 
 ---
 
+## 1b. Spawn title-prefill — type-aware verb (v0.4.11)
+
+The spawned entity's title is prefilled with a type-aware verb +
+parent title. The verb fits the spawn target's voice:
+
+| Spawn target | Title prefill |
+|---|---|
+| Issue | `Follow-up: {parent.title}` |
+| Todo | `Follow-up: {parent.title}` |
+| Rock | `Follow-up: {parent.title}` |
+| Headline | `Update on: {parent.title}` |
+
+"Follow-up" reads right for action-shaped entities (issues, todos,
+rocks). Headlines are announcements, not actions, so they take
+"Update on:" instead. The verb is set in `buildSpawnPrefill` (or
+equivalent) — don't compute the title string inline at the callsite.
+
+The user can fully overwrite the prefill — it's a starting point,
+not a lock. Blind-save still yields a useful title because the parent
+context is in the body (see §2 below).
+
+### Spawn-parent shape — includes `parent.title`
+
+`SpawnParent.type` union includes `"issue" | "todo" | "rock" |
+"milestone" | "headline" | ...`. All spawn types MUST emit
+`parent.title` in the prefill payload so downstream renderers
+(`PendingLinkPreview`, etc.) display the parent name without a
+network fetch.
+
+Milestone-as-parent: pass `parentTitle` explicitly to
+`PendingLinkPreview` — milestones live under their rock at
+`/api/rocks/{rockId}/milestones/{id}` with no flat lookup endpoint,
+so the title can't be fetched by id alone.
+
+---
+
 ## 2. Spawn-prefill body format — locked
 
 Every spawn-follow-up uses this **identical** body-prefill format. Three newlines, separator line, "Original X" header (em-dashes both sides), metadata lines, blank line. The user types ABOVE the line; context lives BELOW.
