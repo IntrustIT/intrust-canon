@@ -159,6 +159,57 @@ Example /issues row block structure (v0.4.4):
 
 The breadcrumb block doesn't render. The title sits at the top of its slot. No empty placeholder, no `mb-0.5` left dangling.
 
+### Row-payload contract for parent context (v0.4.9)
+
+List-page row payloads MUST surface enough parent context for the
+breadcrumb to render WITHOUT a per-row network fetch. The shape:
+
+```ts
+parent: {
+  type: "rock" | "milestone" | "issue" | "vto_goal" | "headline" | ...,
+  id: string,
+  title: string,
+  // For milestone parents — surface the rock chain so the breadcrumb
+  // can render "🪨 Rock Name › Milestone Name"
+  rock?: { id: string, title: string } | null,
+  // For issue parents — surface the type so the inheritance glyph
+  // rule (v0.4.8) can decide whether ⚡ appears
+  issueType?: "stractical" | "short_term" | "long_term",
+} | null
+```
+
+Canonical going-forward shape: the unified `parent: {...}` object
+returned by `/api/issues` (resolved from `Issue.parentType` +
+`Issue.parentId` into a single shape per row).
+
+Legacy shape currently in `/api/todos`: top-level `todo.rock` +
+`todo.milestone` as separate fields. Works for v1 but should migrate
+to the unified `parent: {...}` shape so list-page clients can render
+parent breadcrumbs from one consistent payload key. Migration tracked
+on the punchlist.
+
+List-page clients NEVER fetch parent titles per-row from page state —
+the API does the resolution once, including any chain context (rock
+for milestones, type for issues).
+
+### Slot 5 indicators — parallel to breadcrumb, not exclusive (v0.4.9)
+
+The slot-5 indicators (🔗 link count, 💬 comment count, etc.) do NOT
+exclude items already shown in the breadcrumb. The two surfaces
+describe the same relationship at different levels of detail:
+
+- **Breadcrumb** — rich render of the most-important parent (single
+  link, type-glyph if strategic, chain context for milestones).
+- **🔗 indicator** — bulk summary count of ALL linked items (the
+  breadcrumb parent IS counted; peers + spawned items are also
+  counted). Tooltip on hover surfaces the type-prefixed names list.
+
+When a relationship exists as both an FK (Issue.parentType + parentId)
+AND a mirror EntityLink row, dedup at the counts API (`/api/links/
+counts`) is the canonical defense against double-counting. The user
+sees one count, the canonical relationship surfaces twice (richly in
+the breadcrumb, summarily in the count).
+
 ## Resp-A vs Resp-B — opacity rule
 
 When both responsibility slots are present:
