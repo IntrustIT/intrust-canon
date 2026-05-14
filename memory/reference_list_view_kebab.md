@@ -78,6 +78,53 @@ A list page can have BOTH:
 
 Different scopes, not duplicates. Pill = "reset my filters." Kebab = "reset this entire view." If a list only has one scope of state, ship only the corresponding control.
 
+## Group-by chip suppression — single-bucket dimensions hide (v0.4.12)
+
+A Group-by dimension is only useful when it would yield 2+ buckets in
+the current scope. If the current tab + filter set would collapse a
+dimension into a single bucket, that Group-by option **suppresses
+itself** from the chip row — no one wants to "group by Type" if every
+visible item is the same Type.
+
+### Rules
+
+- **Suppression test:** for each Group-by dimension, compute the count
+  of distinct values across the currently visible rows (post-filter,
+  post-tab). If count < 2 → hide the chip.
+- **Stale-selection auto-snap:** if the user's active Group-by gets
+  suppressed (e.g. they were on Group-by="Type" on the Short-Term tab,
+  then switched to Long-Term where only one Type exists), snap their
+  selection to `none` for the new scope. **Silent** — no toast, no
+  visual notification. Per `reference_primary_mode_tabs.md`, each tab
+  owns its own group-by preference; the snap is local to the tab the
+  user just entered.
+- **Preference preservation across tabs:** the snap-to-none is local
+  to the destination tab. If the user switches back to a tab where
+  Group-by="Type" was previously valid, the original preference
+  re-applies (per the existing tab-scoped preference rule).
+
+### Why silent
+
+The snap is consistent with the "each tab owns its own preferences"
+contract. Adding a toast or visual flash would imply something
+unexpected happened, when in fact the system is enforcing the rule
+that a dimension only earns chip placement when it would actually
+group. The user notices the chip is gone (or selected None) and reads
+it as "this tab can't group by Type because there's only one Type
+here" — same conclusion the system reached.
+
+### Pilot
+
+/issues Long-Term tab: only one Type exists in scope (Long-Term), so
+the "Type" chip suppresses. /issues Short-Term tab keeps the "Type"
+chip (Stractical + Short-Term = 2 values).
+
+### Generalization
+
+Applies to ANY Group-by dimension on ANY list page — Type, Team,
+Owner, Status, Priority, etc. Test is always "would this dimension
+yield 2+ buckets in current scope?"
+
 ## Canonical example
 
 `app/todos/page.tsx` lines ~1062–1103 is the reference implementation.
