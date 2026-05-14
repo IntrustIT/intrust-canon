@@ -54,6 +54,33 @@ These primitives exist. Before inventing a new alert/confirm/textarea/picker, ch
 
 - **[`lib/getTeamId.ts`](lib/getTeamId.ts)** — `getTeamIdForUser(userId)`: returns `primaryTeamId` if set, else first membership. Use for create-mode default team resolution.
 
+- **[`lib/linked-tooltip.ts`](lib/linked-tooltip.ts) — `formatLinkedTooltip(payload)` (v0.4.10).** Canonical formatter for the 🔗 link-count tooltip on list rows. Renders a count header + a name list:
+
+  ```
+  3 linked · 1 spawned from this
+  Rock: Renew Contract
+  Rock: Q4 Migration
+  Issue: Pricing
+  ```
+
+  **Locked rules:**
+  - **Header line:** `N linked` always; ` · M spawned from this` appended only when M > 0. Counts split the "summary" facts from the "name list" — don't mix them on one sentence line.
+  - **Item lines:** type-prefixed always (`Rock: `, `Issue: `, `Milestone: `, `Headline: `, `Todo: `, etc.). Simple + obvious; don't optimize prefix-out for single-type lists.
+  - **Cap at 5 items.** When > 5 linked, render the first 5 followed by `(+N more)` on its own line. To see the full list, the user opens the entity — the tooltip is a preview, not a navigator. No popover affordance.
+  - **Empty:** if there are zero linked items the 🔗 indicator doesn't render at all (no zero-count tooltip).
+  - **Spawned-count source:** read from `payload.spawned` (server-side count of edges where this entity is the origin of a follow-up spawn). Don't reconstruct client-side.
+
+  **Input shape** (matches `/api/links/counts` response):
+  ```ts
+  formatLinkedTooltip({
+    total: number,
+    spawned: number,
+    items: { type: string, id: string, title?: string }[]
+  }): string
+  ```
+
+  Used by /issues + /todos row 🔗 tooltips. Any new list-page rendering a 🔗 link-count indicator MUST use this helper — don't roll a bespoke string.
+
 ## Editor pattern conventions
 
 Detail panel editors (Rock/Issue/Todo/Headline/Metric) share a common skeleton.

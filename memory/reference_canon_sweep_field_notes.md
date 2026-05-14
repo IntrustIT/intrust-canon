@@ -292,6 +292,20 @@ Retired 2026-05-13. The persistent-section-with-identity-chrome pattern was reti
 - **Test:** Compare to `/todos` in two browser windows. Anything that doesn't match without a canon-documented reason is drift.
 - **Found in:** /issues during v0.4.1 retrofit — Raised-by picker width, Archive switch shape, kebab placement.
 
+### D36. 🔗 link-count tooltip shows the count but not the names
+- **What it is:** A row's 🔗 indicator renders a count-only tooltip ("3 linked") with no information about WHAT is linked. User has to open the entity to find out what the count refers to.
+- **Why it's drift:** Per `reference_shared_components.md` v0.4.10 + `formatLinkedTooltip`. The tooltip is canon-required to surface the type-prefixed names list, not just the count. Names-on-hover is what makes the 🔗 indicator scan-useful instead of decorative.
+- **Replacement:** Use `formatLinkedTooltip({ total, spawned, items })` from `lib/linked-tooltip.ts`. Server returns `items` in `/api/links/counts`. Render shape:
+  ```
+  3 linked · 1 spawned from this
+  Rock: Renew Contract
+  Rock: Q4 Migration
+  Issue: Pricing
+  (+2 more)
+  ```
+- **Locked rules:** type-prefix always, cap at 5 items + "(+N more)" tail, no popover (open the entity for full list), spawned-count appended only when > 0.
+- **Pilot (v0.4.10):** /issues + /todos row 🔗 tooltips. Sweep target: any future list-page rendering 🔗 indicators.
+
 ### D35. Parent-link rendered as column pill instead of blue text above title
 - **What it is:** A row's parent or linked-context (rock parent of a todo; strategic targets on /issues; sibling links) renders as a colored pill in its own column instead of as blue breadcrumb text inside the title slot.
 - **Why it's drift:** Per `reference_list_row_column_order.md` v0.4.4. Parent-link is *context* for the title and belongs visually adjacent to it. Pills in a dedicated column separate context from content AND compete with other row indicators. The blue-breadcrumb idiom is well-established and saves a column slot.
