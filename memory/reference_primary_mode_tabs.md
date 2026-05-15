@@ -164,6 +164,57 @@ canon): `Wins | FYIs` per the runner's order.
 
 The tab order encodes the canonical workflow — don't sort alphabetically.
 
+## Per-tab Archive switch semantics (v0.5.0 PILOT)
+
+> **PILOT — v0.5.0.** Pattern from /headlines News vs Published tabs. When a second entity adopts (e.g. /issues Short-Term vs Long-Term archive paths), strip the marker.
+
+The Band 2 Archive switch is a **single UI surface** with consistent label and shape, but its **underlying filter axis can vary per tab** when an entity has multiple "archive" axes:
+
+| Tab | What "archive" means |
+|---|---|
+| /headlines News | `archive` = per-team acknowledged (this team marked it processed) |
+| /headlines Published | `archive` = per-headline `originatorArchived` (author archived their own) |
+
+The switch label stays **"Archive"** (single source of truth — the user shouldn't have to memorize different labels per tab). The semantics derive from the active tab.
+
+Generalizes to any list with primary-mode tabs covering distinct lifecycle states where each state has its own natural archive axis. For example, /issues Short-Term and Long-Term might want different archive axes if their resolution paths diverge.
+
+**Rule:** the switch UI stays unified; the filter mapping is tab-aware in the page's state-to-query layer. The user thinks "Archive on/off"; the page knows which axis to bind it to in the current tab.
+
+### When NOT to vary per tab
+
+If both tabs have the same archive axis (just a regular `archived: true/false` flag on the entity), don't introduce per-tab variance — it's overhead with no payoff. The pattern earns its complexity only when the tabs genuinely have different archive semantics.
+
+## All-teams mode → forced group-by-team layout (v0.5.0 PILOT)
+
+> **PILOT — v0.5.0.** Pattern from /headlines all-teams view. Likely applies to /rocks and other team-scoped list pages. Strip when a second entity adopts.
+
+When the H1 team picker is set to **"All teams"** on a list page with primary-mode tabs that have **per-team mental models** (News/Published, etc.), the page enters a cross-team perspective. Single-team-perspective UI doesn't fit; the page forces a grouped layout instead.
+
+### Rules
+
+- **Forced group-by-target-team in News-equivalent tabs.** Each team becomes its own collapsible bucket. The Group-by selector in the ⋮ kebab is **hidden** for the duration of all-teams mode — the user can't pick a different grouping because the page's only sensible cross-team view IS grouped-by-team.
+- **Direction picker hidden** (if the page had one for single-team mode — e.g. an in/out scope). Doesn't apply across all teams.
+- **Single-team-perspective filters relax to per-bucket equivalents.** A filter that was "acknowledged by my team" in single-team mode becomes "acknowledged by EACH bucket's team" within each section. Filter intent preserved per bucket.
+- **Switching back to a single team** restores the user's prior Group-by, filter values, and direction picker for that tab.
+
+### Why this works
+
+News/Published on /headlines are per-team mental models — "did MY team process this?" doesn't have a coherent meaning across the org. Grouping by team turns the org-wide view into N parallel per-team views, preserving the mental model inside each bucket.
+
+### When to use
+
+Any list page where:
+1. There are primary-mode tabs whose semantics are team-scoped
+2. The H1 team picker offers an "All teams" option (most do)
+3. Cross-team viewing without grouping would mix data the user can't usefully read together
+
+### When NOT to use
+
+- Pages whose tab semantics are NOT team-scoped (/issues primary-mode tabs are about time horizon, not team — all-teams view doesn't need forced grouping).
+- Pages without "All teams" option (rare; most list pages have it via leadership-team override).
+- Pages with no primary-mode tabs — the all-teams forced layout only fires when there's also tab-mode complexity to flatten.
+
 ## Off-canon
 
 - Hiding a primary mode behind a kebab item ("View > Long-Term issues").

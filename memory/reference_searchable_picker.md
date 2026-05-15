@@ -77,14 +77,33 @@ Examples that MUST be SearchablePicker even though they're small today: user pic
 />
 ```
 
-## Trigger shape — `triggerShape="form"` (default) | `"inline"` (v0.4.0, s60)
+## Trigger shape — `triggerShape="form"` (default) | `"inline"` (v0.4.0, s60) | `"pill"` (v0.5.0)
 
-`<SearchablePicker>` renders two distinct trigger shapes depending on where it lives in the layout:
+`<SearchablePicker>` renders three distinct trigger shapes depending on where it lives in the layout:
 
 | Shape | Use for | Renders as |
 |---|---|---|
 | `"form"` (default) | Pickers inside form fields, slide-over body, table cells — anywhere a labeled `<select>`-like surface is expected. | `border border-gray-200 rounded-md px-2 py-1.5 text-sm bg-white` (form-input shape). |
 | `"inline"` | Pickers embedded in typography — page H1 scope picker, inline-clickable labels, etc. | Plain text with chevron and hover state. No border, no chip background, inherits surrounding font size + weight. |
+| `"pill"` (v0.5.0) | **Band 2 primary picker on list pages** — Responsibility on /todos, Raised by on /issues, Shared by on /headlines. Replaces hand-rolled dropdown chips. | `inline-flex items-center gap-2 px-3 py-1.5 rounded-md border border-gray-200 bg-white text-sm hover:bg-gray-50` (chip-shaped, smaller than form-input). |
+
+### `triggerLabelPrefix` prop (v0.5.0)
+
+Pill triggers typically render with a label prefix that names the axis: `Responsibility: All`, `Raised by: Bob`, `Shared by: Me`. The `triggerLabelPrefix` prop sets the prefix string; the picker renders `{prefix}: {selectedLabel}` automatically.
+
+```tsx
+// /todos Band 2 primary picker
+<SearchablePicker
+  triggerShape="pill"
+  triggerLabelPrefix="Responsibility"
+  options={responsibilityOptions}
+  value={respValue}
+  onChange={setResp}
+/>
+// renders: [Responsibility: All ▾]
+```
+
+When `triggerLabelPrefix` is omitted, the pill renders the selected label alone (no prefix). Use the prefix on filter pills (where the axis isn't visually obvious); omit on context-pickers where the axis is clear from placement.
 
 The `"inline"` shape is the canonical H1 team-picker pattern — see `reference_team_picker.md`. Hover behavior on inline triggers: text color lifts to brand-blue (`hover:text-[#0069AA]`) so the surface reads as clickable.
 

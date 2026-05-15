@@ -104,6 +104,43 @@ Issues use **binary status only**: Open (not yet resolved) and Resolved (done). 
 
 **Field-note pairing:** D22 ("Complete"/"Completed"/"Incomplete" copy drift, per `feedback_done_not_done.md`) applies to issue status too — render "Open" / "Resolved" / "Mark resolved" / "Mark open," not "Solved" / "Mark solved."
 
+## Atomic field flip — one UI control writes all related fields (v0.5.0)
+
+When a single UI action (button, menu item, picker selection) conceptually changes a status that's represented internally by **multiple DB fields**, the handler MUST write ALL related fields in one atomic PUT — never just one.
+
+**Canonical example: /rocks Complete pick.**
+
+A rock's "Complete" state is represented internally by both:
+- `rock.phase = "complete"` (lifecycle phase)
+- `rock.status = "complete"` (health status)
+
+The "Complete" picker option sets BOTH on the same PUT. Setting only one creates drift: list pages reading `phase` show the rock as Complete; AI surfaces reading `status` show it as something else. The user's single click was supposed to be one atomic state change; partial writes turn it into two states.
+
+### Rule
+
+When a UI control flips a *conceptual* status that maps to multiple DB fields:
+- The handler computes the full target state across ALL related fields.
+- The PUT body includes ALL of them.
+- The server PUT validates the combination is internally consistent (no `phase = "complete"` + `status = "off_track"` reaching the DB).
+- No partial-flip code paths anywhere — never `update({ phase: "complete" })` alone.
+
+### Cleanest path: derive one from the other
+
+If two fields always co-vary, prefer to compute one server-side from the other rather than store both. Eliminates the drift surface entirely. When schema reasons require storing both (legacy migrations, performance, etc.), the atomic-flip rule applies.
+
+### Where this shows up
+
+- Rock phase vs rock status (v0.5.0 pilot)
+- Issue status (open vs solved) is single-field, doesn't apply
+- Todo completed flag is single-field, doesn't apply
+- Future: any entity where lifecycle and health are tracked separately is a candidate for this rule
+
+### Off-canon
+
+- Letting one consumer write `phase` and another write `status` independently. Anti-canon.
+- Adding a "Sync phase to status" reconciler job. The fix is at the write site, not a janitor.
+- Surfacing both fields in the UI as two separate pickers ("Phase: …" / "Status: …") when they conceptually represent one state. That's the user dealing with our drift; un-drift the schema or the writes.
+
 ## Color → meaning convention
 
 Across the entity status maps (`ISSUE_STATUS_COLORS`, `ROCK_PHASE_COLORS`, `TODO_STATUS_COLORS`, `HEADLINE_TONE_COLORS`, `MEETING_STATUS_COLORS` in `lib/status-colors.ts`):

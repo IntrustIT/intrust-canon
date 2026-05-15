@@ -78,7 +78,17 @@ A list page can have BOTH:
 
 Different scopes, not duplicates. Pill = "reset my filters." Kebab = "reset this entire view." If a list only has one scope of state, ship only the corresponding control.
 
-## Group-by chip suppression — single-bucket dimensions hide (v0.4.12)
+## What does NOT belong in the kebab — distinct view *shapes* (v0.5.0)
+
+The ⋮ kebab is for view **preferences** (Layout density, Group-by) and view-scoped actions (reset, expand/collapse all). It is **NOT** the home for distinct view **shapes** that present the same data in a fundamentally different visual model — Board, Gantt, Roadmap, Matrix, Calendar, etc.
+
+These are *destinations*, not preferences. The user picks them once and commits; they don't flip among them mid-task the way they flip Layout density. They belong in the **Band 1 right cluster, LEFT of Refresh/Archive/AI/+Add**, as a labeled `<Popover>` showing the current shape inline (e.g. `▾ Board`).
+
+Rule of thumb: if switching the option *re-renders the page into a different visualization model*, it's a view shape — put it in Band 1. If switching only changes density/grouping/sort, it's a view preference — keep it in the ⋮ kebab.
+
+**Pilot:** /rocks (v0.5.0) — Board / Gantt / Matrix selector in Band 1 right cluster.
+
+## Group-by chip suppression — single-bucket dimensions hide (v0.4.12, refined v0.5.0)
 
 A Group-by dimension is only useful when it would yield 2+ buckets in
 the current scope. If the current tab + filter set would collapse a
@@ -88,9 +98,10 @@ visible item is the same Type.
 
 ### Rules
 
-- **Suppression test:** for each Group-by dimension, compute the count
-  of distinct values across the currently visible rows (post-filter,
-  post-tab). If count < 2 → hide the chip.
+- **Suppression test (v0.5.0 refinement):** for each Group-by dimension, compute the count of distinct buckets the **viewer is allowed to see** in current scope (post-filter, post-tab, post-team-scope-gate). NOT raw distinct values in the database. If count < 2 → hide the chip.
+  - **Why viewer-allowed:** in single-team scope on /headlines, "Group by Target Team" would yield N buckets if you counted every team a headline cascaded to (broadcast-style). The user is only scoped into one team — they only see one bucket. The viewer-allowed count is 1; suppress.
+  - In All-teams mode the count is computed across the user's teams (or org-wide for leadership), still respecting their access gate.
+  - The principle: a Group-by only earns a chip when it would actually group the user's visible data.
 - **Stale-selection auto-snap:** if the user's active Group-by gets
   suppressed (e.g. they were on Group-by="Type" on the Short-Term tab,
   then switched to Long-Term where only one Type exists), snap their

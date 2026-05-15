@@ -108,6 +108,38 @@ Both column-header cells (in Band 4) AND row cells (Band 5) use the same alignme
 
 ## Row 2 — view + filters + search + clear
 
+### Band 2 starts with a primary picker, axis-distinct from the H1 scope picker (v0.5.0)
+
+Every list page starts Band 2 with a **primary filter picker** whose axis is *distinct* from the H1 team-scope picker. The H1 picker defines the dataset; Band 2 picker filters within it. Two different axes, two different surfaces — never duplicated.
+
+| Page | H1 scope | Band 2 primary picker |
+|---|---|---|
+| /todos | Team | Responsibility |
+| /issues | Team | Raised by |
+| /headlines | Team | Shared by |
+| /rocks | Team | TBD (likely Owner per s64 sweep) |
+
+The visual rhythm — same pill shape, same position — makes Band 2 look consistent across pages even though the axis varies per entity. Missing the primary picker (Band 2 starts with Archive) breaks the rhythm and reads as "this page is shaped differently." If the entity genuinely has no useful Band-2 filter axis, the page is probably small enough that it should rethink whether a list-page chrome is the right shape at all.
+
+The Band-2 picker uses `<SearchablePicker triggerShape="pill" triggerLabelPrefix="…">` (per `reference_searchable_picker.md` v0.5.0).
+
+### Filters popover — retirement criteria (v0.5.0 positive rule)
+
+The `Filters ▾` popover is **earned**, not assumed. Default stance: fold filters inline; promote to popover only when the count justifies a container.
+
+**Retire the popover when:**
+- Fewer than **3 narrow filter axes** remain beyond always-inline elements (primary picker, Archive, signature switch, Search). One or two axes fold inline.
+- All remaining axes can move to either Band-2 chips or the ⋮ kebab Group-by.
+
+**Examples:** /issues retired its popover in v0.4.5 (only Need + Direct Reports left after Raised by went inline; Need moved to Group-by, Direct Reports moved out to its own surface). /rocks retired in s64 (similar reduction).
+
+When retired:
+- Remove the popover trigger button + the popover JSX
+- Inline the surviving filter axes in Band 2
+- Verify no orphan state in URL / sessionStorage references the popover
+
+### Standard Filters ▾ shape (when earned)
+
 In order, left to right:
 1. **View ▾ popover** (`components/Popover.tsx`) — contains: Layout picker (list / compact), Sort by (entity-specific keys), Group by (None / Team / Owner / ...per list).
 2. **Filters ▾ popover** — earned only when the page has 3+ narrow filter axes beyond the always-inline elements (primary picker, Archive, signature switch). Filter-count badge. Width `280`. Fields appropriate to the entity + "Clear all filters" button when any are active.
@@ -442,6 +474,14 @@ Every list writes a `<list>.view` key to `sessionStorage` on any change, hydrate
 ## Grouping + collapsible headers
 
 When `groupBy !== "none"`, split the sorted+filtered list into buckets. Each bucket has a collapsible header button at full row width with a rotating chevron + label + `· N` count. Collapsed state tracked per-key in a `Set<string>` that's part of the sessionStorage view blob. Works in both list + compact views.
+
+### Legacy enum value bucketing (v0.5.0)
+
+When a status enum is reduced (e.g. /rocks retired `at_risk` and `confused` as separate values; both now bucket into `off_track`), the bucketing layer MUST apply the **same precedence as the row visual** — legacy values render as their current canonical bucket, NOT as their own separate bucket.
+
+Without this, a stored `at_risk` row would render with the off-track stripe (per the row visual mapping) but appear in an `at_risk` bucket of its own under Group-by. Two encodings, two states. The bucket layer collapses legacy values to match what the row already shows.
+
+Implementation: the bucket key for any row is computed via the same `mapToCanonical(rawStatus)` helper the row visual uses. Add new mappings to that helper when retiring enum values, not to a separate bucketing function.
 
 ### Canonical expand/collapse-all control (single toggle chevron)
 

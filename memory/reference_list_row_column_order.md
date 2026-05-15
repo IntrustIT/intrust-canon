@@ -192,6 +192,26 @@ List-page clients NEVER fetch parent titles per-row from page state —
 the API does the resolution once, including any chain context (rock
 for milestones, type for issues).
 
+### Slot 5 indicators — never duplicate other row slots (v0.5.0)
+
+A slot 5 indicator MUST encode information that's **NOT already on the row in another slot.** Identity already lives in slot 6 (Resp-A avatar) and slot 9 (team chip). Status already lives in slot 3 (state circle) or as a row stripe. Date already lives in slot 8.
+
+If your slot-5 indicator would surface info that's already visible elsewhere on the row, it's double-encoding — drop it. The slot only earns its real estate when it tells the viewer something new.
+
+**Canonical examples (allowed):**
+- 🔗 link count + tooltip — the row has no other link-count surface
+- 💬 comment count — the row has no other comment surface
+- Need pill (issue's intent bucket) — distinct axis from row stripe / state circle
+- ⚡ Stractical glyph (type indicator) — when type isn't otherwise on the row
+- Source / route badge — origin info not in any other slot
+
+**Anti-canon (double-encoding):**
+- "Leadership → All teams" cascade label when slot-6 avatar is the Leadership user AND slot-9 team chip is "Leadership" — the originator identity is already on the row twice; slot-5 should only show reach beyond that.
+- Owner name as a text pill in slot 5 when slot-6 already renders the owner avatar
+- A status pill in slot 5 when slot-3 already encodes status via the state circle
+
+**Rule of thumb:** slot 5 indicators are for *reach, relationships, count summaries, and derived flags* — never for *identity, status, or date* (which have their own dedicated slots).
+
 ### Slot 5 indicators — parallel to breadcrumb, not exclusive (v0.4.9)
 
 The slot-5 indicators (🔗 link count, 💬 comment count, etc.) do NOT

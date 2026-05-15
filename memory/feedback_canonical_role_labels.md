@@ -60,7 +60,20 @@ Two flavors of responsibility coexist by design:
 Both classes ARE the responsibility role for their entity. The tense difference is editorial — it picks the verb that reads most naturally for the entity's lifecycle. Issues are *opened* by an act of raising; headlines are *broadcast* by an act of sharing — so the past-tense form earns the label. Todos and rocks are *carried* over time — so the forward-tense form earns it.
 - **Created by** — document authorship. A HIP plan is a document; the creator authored it but doesn't necessarily own its outcomes.
 
-## "Responsibility" — umbrella filter term
+## "Responsible" (single role) vs "Responsibility" (umbrella, two roles)
+
+**v0.5.0 clarification** — these two labels are NOT interchangeable:
+
+- **"Responsible"** is a **single role label** — the person on the hook for an entity. Used on entities that have ONE accountability role (rocks → Owner is "Responsible"; headlines → author is "Shared by"; issues → raiser is "Raised by"). Render as `<UserAvatar role="Responsible">`.
+- **"Responsibility"** is an **umbrella term** for entities that carry BOTH a Responsible person AND a Due-to person (canonical example: todos). Used as the filter / picker label that lets the user say "show me things assigned to me OR due to me." The umbrella collapses the two roles into one user-facing axis.
+
+**Rule:**
+- Single-role entity (rock, headline, issue, milestone) → use the specific role label ("Responsible", "Shared by", "Raised by", "Delegated to") for both the avatar and the Band-2 picker.
+- Two-role entity (todo) → individual avatars still use specific roles (`role="Responsible"` and `role="Due to"`), but the Band-2 picker label is `Responsibility` because it filters across both.
+
+Don't apply "Responsibility" as a single-role label on a rock or other entity that doesn't have a Due-to axis — it implies a second role that doesn't exist. Use "Responsible" instead.
+
+### Original umbrella note (preserved)
 
 The /todos filter uses "Responsibility" as the parent label for the responsible-vs-due-to choice (e.g., "All / Mine / Due to me"). It deliberately covers both axes — the people on the hook AND the recipients — because the user thinks of both as "things on my plate."
 

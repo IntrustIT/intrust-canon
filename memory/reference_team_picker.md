@@ -136,6 +136,16 @@ The user-facing word is **"Private"** everywhere — picker option, visibility b
 
 Rationale (v0.4.0): single word avoids the Personal-vs-Private mental split. The picker treats Private as "your team-of-one" rather than as a separate visibility concept. Items can have a visibility property `private: boolean` (which controls who else can see them); the picker filters to "show me items in my Private scope" using the same word. Two surfaces, one word — easier to learn.
 
+### Per-entity exception (v0.5.0)
+
+Some entities have NO private visibility — every instance targets ≥1 team. **Canonical example: headlines.** A headline is always shared with at least one team (that's its purpose); there is no private headline concept.
+
+**Rule:** the team picker MUST omit the "Private" option for entities that don't support private visibility. Don't render a Private row that produces empty results, and don't render one that produces an unsupported state.
+
+Detection at the page level: if the entity's `visibility` field doesn't include `"private"` as a valid value (or the entity has no visibility field and is always team-scoped), skip the Private row when building picker options. Everything else in the option order stays the same.
+
+This is a per-entity exception to the "Private single-word locked everywhere" rule above — the word is still locked when it appears, but it doesn't have to appear on every page.
+
 ---
 
 ## 8. Trigger label format

@@ -91,6 +91,31 @@ This is the **same pill-tab shape** used inside the View ▾ popover for Layout 
 
 ---
 
+## 3b. Lifecycle-ordered tabs — chevron separators (v0.5.0 PILOT)
+
+> **PILOT — v0.5.0.** Pattern from /rocks editor (Details → Planning → Milestones → Execution). When a second entity adopts lifecycle-ordered tabs, strip the marker.
+
+When editor tabs map to **sequential lifecycle stages** of an entity (planning → execution → retro, or similar), insert a small **`›` ChevronRight** glyph between adjacent tabs to signal reading order. The chevron makes the sequence visually explicit; users read left-to-right as "Stage 1, then Stage 2, then Stage 3."
+
+```tsx
+<div className="flex items-center gap-1">
+  {tabs.map((tab, i) => (
+    <Fragment key={tab.id}>
+      {i > 0 && <ChevronRight className="w-3 h-3 text-gray-300" />}
+      <button className={tabClassName(tab, activeTab)}>{tab.label}</button>
+    </Fragment>
+  ))}
+</div>
+```
+
+- Chevron color: `text-gray-300` — subtle, doesn't compete with the tabs
+- Chevron size: `w-3 h-3` — matches breadcrumb chevron sizing
+- Spacing: `gap-1` outer, no extra padding around the chevron
+
+**Use ONLY for sequential lifecycle.** If tabs are parallel (Details / Comments / History — orthogonal sections of the same entity), use the standard pill-style tab bar from §3 above. Lifecycle chevrons imply order; using them on parallel sections is misleading.
+
+---
+
 ## 4. Counts on tabs (when applicable)
 
 For sub-entity tabs, surface a count of items in the list:
