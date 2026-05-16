@@ -117,6 +117,52 @@ Don't add it inline in one page and forget the others.
 
 ---
 
+## 4b. Entity-specific verb rename → sibling helper, NOT generic-param expansion
+
+When one entity needs a destructive verb that differs from the universal `Delete permanently` shape — different label, different confirm body, different permission gate, possibly different effect — **fork a sibling helper next to `deleteItem`. Do NOT add label/body/permission overrides to the generic `deleteItem`.**
+
+Concrete example: Headlines v3 introduces **Recall** as the originator-side destructive verb (Published surfaces). Recall has:
+- Different label ("Recall" not "Delete") — the entity is broadcast, not private; "Delete" misframes the act
+- Different confirm body (blast-radius SEEN/UNSEEN counts, not the generic "remove + comments + activity history")
+- Different permission gate (originator or admin, not team-membership)
+- Same underlying transport (DELETE method on the server) — Recall is a UX wrapper, not a new server verb
+
+The canon approach is a sibling helper:
+
+```ts
+// lib/entity-actions.ts
+
+// Generic across Issue / Todo / Rock / Metric / etc.
+export function deleteItem(entity, type, ctx): ContextMenuItem { ... }
+
+// Headline-specific
+export function recallHeadlineItem(headline, ctx): ContextMenuItem { ... }
+```
+
+`buildHeadlineActions` invokes `recallHeadlineItem` instead of `deleteItem("headline", ...)`.
+
+### Why sibling, not generic-param expansion
+
+The temptation: add a `{ label?, bodyOverride?, permissionGate? }` options bag to `deleteItem` so it can shape-shift. Don't.
+
+- `deleteItem` exists to **protect** the canonical Delete shape across many entities. Adding overrides erodes that protection — once it accepts a label override, it'll accrete body overrides, then permission overrides, then per-entity confirm-copy overrides. Eventually it's not canon, just a configurable function.
+- Recall is **behavior-different**, not just label-different. Its blast-radius compute, its permission gate, and its confirm shape are entity-specific. A sibling helper signals "this is the canonical Recall shape" and protects it from future drift the same way `deleteItem` protects Delete.
+- Adding the override path encourages other entities to "just pass a label override" instead of asking whether their case is genuinely a new verb deserving its own helper. The branch point is the design opportunity.
+
+### When this rule applies
+
+Trigger: an entity needs an action whose **mental model** differs from the existing canonical action, not just its surface label. Tests:
+
+- If renaming alone is sufficient → it might not need a sibling; rename in the builder and document why.
+- If the confirm copy, permission, or effect diverges → sibling helper.
+- If multiple entities would want the same NEW verb → consider promoting to a generic with a clear scope (e.g. `recallItem(entity, type, ctx)`) only after a second entity actually adopts it. Don't generalize speculatively.
+
+### Inverse: when to extend `deleteItem` (NOT fork)
+
+If a per-entity tweak is genuinely just a confirm-copy nuance with the same semantics (same permission, same effect, same blast radius), a small label/body override is fine. The line is **semantic difference**, not surface difference.
+
+---
+
 ## 5. Required actions per entity (universal)
 
 Every entity action set MUST include:

@@ -164,26 +164,30 @@ canon): `Wins | FYIs` per the runner's order.
 
 The tab order encodes the canonical workflow — don't sort alphabetically.
 
-## Per-tab Archive switch semantics (v0.5.0 PILOT)
+## Per-tab Archive switch semantics — DORMANT pattern (v0.5.0 PILOT, retired by Headlines v3)
 
-> **PILOT — v0.5.0.** Pattern from /headlines News vs Published tabs. When a second entity adopts (e.g. /issues Short-Term vs Long-Term archive paths), strip the marker.
+> **DORMANT 2026-05-16.** The original PILOT cited /headlines News vs Published with divergent archive axes (per-team ack vs `originatorArchived`). Headlines v3 (intrust-os `project_headlines_v3.md`) collapsed those into a single per-team `HeadlineStatus.archived` flag — both tabs now share one archive axis. **No current entity uses per-tab archive variance.** The pattern is preserved here as a forward-looking spec in case a future entity genuinely has tab-divergent archive semantics; do not implement speculatively.
 
-The Band 2 Archive switch is a **single UI surface** with consistent label and shape, but its **underlying filter axis can vary per tab** when an entity has multiple "archive" axes:
+If a future list page DOES need divergent archive axes per primary-mode tab:
 
-| Tab | What "archive" means |
-|---|---|
-| /headlines News | `archive` = per-team acknowledged (this team marked it processed) |
-| /headlines Published | `archive` = per-headline `originatorArchived` (author archived their own) |
+**Rule:** the Band 2 Archive switch is a **single UI surface** with consistent label ("Archive"). Per-tab variance lives in the page's state-to-query layer, not in the user-facing label — the user thinks "Archive on/off"; the page knows which axis to bind it to in the active tab.
 
-The switch label stays **"Archive"** (single source of truth — the user shouldn't have to memorize different labels per tab). The semantics derive from the active tab.
+```
+Tab A:  archive switch ON  →  WHERE flagA = true
+Tab B:  archive switch ON  →  WHERE flagB = true
+```
 
-Generalizes to any list with primary-mode tabs covering distinct lifecycle states where each state has its own natural archive axis. For example, /issues Short-Term and Long-Term might want different archive axes if their resolution paths diverge.
+The user does NOT see two different switches or two different labels. One label, tab-dependent semantics.
 
-**Rule:** the switch UI stays unified; the filter mapping is tab-aware in the page's state-to-query layer. The user thinks "Archive on/off"; the page knows which axis to bind it to in the current tab.
+### Default: do NOT vary per tab
 
-### When NOT to vary per tab
+If both tabs share the same archive axis (a single per-team join row like `HeadlineStatus.archived` or a flat `archived: true/false` flag), don't introduce per-tab variance — it's overhead with no payoff. The pattern earns its complexity only when the tabs genuinely have lifecycle-divergent archive semantics, which has not yet occurred in this codebase.
 
-If both tabs have the same archive axis (just a regular `archived: true/false` flag on the entity), don't introduce per-tab variance — it's overhead with no payoff. The pattern earns its complexity only when the tabs genuinely have different archive semantics.
+### Headlines v3 pilot retraction (2026-05-16)
+
+The dual-axis interpretation that motivated this section turned out to conflate "I'm done with this" (per-team) with "I've retired my own post" (originator-only) into the same Archive control. Headlines v3 separates those concerns: archive is per-team cleanup across BOTH tabs; a separate **recall** verb (originator-only, Published surface only) handles author retraction. The cleaner separation removed the need for per-tab archive variance.
+
+Lesson: before introducing per-tab variance, ask whether the divergent axes are actually two different concerns wearing the same Archive hat. Often they are.
 
 ## All-teams mode → forced group-by-team layout (v0.5.0 PILOT)
 
