@@ -62,22 +62,18 @@ Locked rules:
 
 ---
 
-## 1b. Spawn title-prefill — type-aware verb (v0.4.11)
+## 1b. Spawn title-prefill — single verb everywhere (v0.5.1, reverted from v0.4.11)
 
-The spawned entity's title is prefilled with a type-aware verb +
-parent title. The verb fits the spawn target's voice:
+The spawned entity's title is prefilled with **`Follow-up: {parent.title}`** for every spawn target — issue, todo, rock, headline. One rule, no per-type variation. The verb is set in `buildSpawnPrefill` (or equivalent) — don't compute the title string inline at the callsite.
 
 | Spawn target | Title prefill |
 |---|---|
 | Issue | `Follow-up: {parent.title}` |
 | Todo | `Follow-up: {parent.title}` |
 | Rock | `Follow-up: {parent.title}` |
-| Headline | `Update on: {parent.title}` |
+| Headline | `Follow-up: {parent.title}` |
 
-"Follow-up" reads right for action-shaped entities (issues, todos,
-rocks). Headlines are announcements, not actions, so they take
-"Update on:" instead. The verb is set in `buildSpawnPrefill` (or
-equivalent) — don't compute the title string inline at the callsite.
+**History:** v0.4.11 briefly shipped a type-aware version (`Update on:` for headline). Ricky originally intended the simpler single-verb rule but the type-aware version landed by accident; reverted v0.5.1 to match Ricky's actual preference + the code state at `lib/spawn-prefill.ts:62`. The "Update on:" reads-better-for-headlines argument remains valid in theory — if real-world headline spawns make `Follow-up: …` feel awkward, propose the type-aware variant fresh; don't auto-restore v0.4.11.
 
 The user can fully overwrite the prefill — it's a starting point,
 not a lock. Blind-save still yields a useful title because the parent
