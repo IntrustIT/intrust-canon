@@ -1,6 +1,6 @@
 ---
 name: Drag-reorder canon
-description: Native HTML5 DnD pattern for reordering rows. ⠿ handle (Unicode), opacity-0 → group-hover:opacity-100, dragId+dragOverId state, brand-blue 2px drop indicator at row top, opacity-40 dragging row. Reference impls: app/meetings/[id]/page.tsx (IDS), app/scorecard/page.tsx (#551 C3b).
+description: Native HTML5 DnD pattern for reordering rows. ⠿ handle (Unicode), always-visible at text-gray-300 hover:text-gray-500 (per feedback_always_visible_affordances.md), dragId+dragOverId state, brand-blue 2px drop indicator at row top, opacity-40 dragging row. Reference impls: app/meetings/[id]/page.tsx (IDS), app/scorecard/page.tsx (#551 C3b).
 type: reference
 originSessionId: f3055e97-3818-4a61-bef4-8209cd87b3a7
 ---
@@ -27,13 +27,11 @@ Pass both down to whatever renders the row, plus the setters and a single `onReo
 ## Visual canon
 
 - **Handle**: literal `⠿` Unicode character (U+2823 BRAILLE PATTERN). NOT a Lucide GripVertical — the character looks lighter and renders consistently.
-- **Handle wrapper (metric / leaf rows)**: `<span draggable className="text-gray-300 hover:text-gray-500 cursor-grab active:cursor-grabbing flex-shrink-0 opacity-30 group-hover/<rowname>:opacity-100 transition-opacity select-none w-4 text-center">⠿</span>`
-- **Handle wrapper (group / section headers)**: `<span draggable className="text-gray-400 hover:text-[#0069AA] cursor-grab active:cursor-grabbing select-none w-4 text-center transition-colors">⠿</span>` — **always-visible, no fade**. Group headers are sparse (5-10 per surface) so a persistent handle reads cleaner than hover-reveal; metric rows stay hover-revealed because they're dense (50+).
+- **Handle wrapper (metric / leaf rows)**: `<span draggable className="text-gray-300 hover:text-gray-500 cursor-grab active:cursor-grabbing flex-shrink-0 select-none w-4 text-center transition-colors">⠿</span>` — always-visible at low weight per `feedback_always_visible_affordances.md`.
+- **Handle wrapper (group / section headers)**: `<span draggable className="text-gray-400 hover:text-[#0069AA] cursor-grab active:cursor-grabbing select-none w-4 text-center transition-colors">⠿</span>` — also always-visible, slightly heavier rest tone (`gray-400`) to acknowledge container-row weight in the hierarchy.
 - **Handle position**: leftmost slot in the row's primary cell. After the bulk-checkbox / row-number prefix if those are present; before any state-flip circle. Per `reference_list_standards.md`.
 - **Tooltip + aria-label**: "Drag to reorder" (or "Drag to reorder group" on headers)
-- **Visibility split (s57)**:
-  - **Leaf rows** (metrics, IDS issues, todos): `opacity-30` at rest, `group-hover/<rowname>:opacity-100` on row hover.
-  - **Container/header rows** (scorecard groups, future section headers): always full opacity. Density-driven distinction.
+- **Rest tone (per `feedback_always_visible_affordances.md`)**: always visibly present at low weight. Leaf rows = `text-gray-300`; container/group headers = `text-gray-400`. Previous opacity-0 → group-hover:opacity-100 pattern was retired 2026-05-17 (md #851 sweep) — invisible affordances teach users the feature doesn't exist.
 - **Dragging row**: `opacity-40` so the user sees what's flying.
 - **Drop indicator**: a 2px brand-blue (`#0069AA`) line at the TOP of the drop-target row.
   - In a `<table>` with `border-collapse`: apply box-shadow to EVERY child `<td>` via an arbitrary Tailwind selector — `[&>td]:shadow-[inset_0_2px_0_0_#0069AA]` on the `<tr>`. Border-collapse tables don't render `<tr>`-level box-shadow reliably across cells; targeting the children is the only consistent approach.
