@@ -17,6 +17,7 @@ import UserAvatar from "@/components/UserAvatar";
 
 <UserAvatar
   name={user.name}             // required
+  avatarUrl={user.avatar}      // optional — renders <img> when truthy, falls back to initials on null/undefined/load-error
   size="sm"                    // optional, default "sm"
   role="Assigned to"           // optional but recommended — see below
   tooltip="Custom tooltip"     // optional override (rare)
@@ -25,6 +26,30 @@ import UserAvatar from "@/components/UserAvatar";
 ```
 
 **Required:** `name`. Falls back to `"Unknown"` when null/undefined; renders `?` initials.
+
+## Photo mode (v0.5.3, 2026-05-17)
+
+When `avatarUrl` is provided and truthy:
+- Renders `<img src={avatarUrl} className="object-cover w-full h-full" alt={name}>` inside the same rounded-full circle wrapper
+- All size variants (xs/sm/md) preserved — image fills the circle, doesn't deform the layout
+- Tooltip + `role` prop behavior unchanged from initials mode
+
+When `avatarUrl` is `null`, `undefined`, or empty string → renders the canonical initials fallback (brand-blue circle, white text, `getInitials(name)`).
+
+**onError fallback:** if the image fails to load (404, network blip, expired proxy session), the `<img>` `onError` swaps to initials silently AND emits a `console.warn` for debuggability:
+
+```ts
+onError={(e) => {
+  console.warn(`[UserAvatar] image failed to load for ${name}: ${avatarUrl}`);
+  setImageError(true);
+}}
+```
+
+The warn ensures real failures (broken Blob proxy, missing files) leave a debug trail. Silent fallback masks bugs.
+
+**URL shape:** `avatarUrl` should be a stable internal URL (e.g. proxy endpoint `/api/files/avatars/...` per the Blob-storage adapter at `lib/blob-storage.ts`). Don't pass raw Blob SAS URLs — they expire. Don't pass public Blob URLs — the Bicep policy forbids public access. The proxy hides storage details from the client.
+
+**Image source canon:** `User.avatar` is the schema field carrying the user's photo path. Pass `avatarUrl={user.avatar}` at consumption time. When a user object isn't in scope (label-only avatars, placeholder rows), omit `avatarUrl` — initials render is correct.
 
 ## Sizes
 
@@ -64,7 +89,7 @@ When NOT to pass `role`: pure-decorative avatar surfaces (a profile-page header 
 - `flex-shrink-0` so it doesn't deform in tight rows
 - Tooltip wraps the avatar (always), positioned per Tooltip's default
 
-**No image avatars yet.** When user-uploaded avatars ship, extend the primitive with an optional `imageUrl` prop and render `<img>` falling back to initials. Don't add that surface ad-hoc in callers.
+**Image avatars shipped v0.5.3 (2026-05-17)** — see Photo mode section above for the `avatarUrl` prop + onError fallback spec. Single primitive, no ad-hoc img rendering in callers.
 
 ## Initials helper
 

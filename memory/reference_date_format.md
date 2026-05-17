@@ -78,6 +78,55 @@ When changing the helper signature or status enum, update all 6 consumer files:
 - Don't bypass the helper to render a "next deadline" or "soonest due date" field — wrap it in `formatDueDate` even if the input is computed.
 - Don't use this helper for non-deadline dates (e.g. `createdAt`, `lastEditedAt`). Those are timestamps, not deadlines — use `toLocaleDateString` or a dedicated timestamp helper.
 
+## Period-keyed storage — normalize to UTC midnight at the API boundary (v0.5.3, 2026-05-17)
+
+Separate concern from rendering. When an entity has a "one row per period" key (weekly scorecard entries, monthly GGOB actuals, quarterly rock targets, etc.), the timestamp anchoring the period MUST be normalized to UTC midnight at the API write boundary AND at read time:
+
+```ts
+const weekOf = new Date(Date.UTC(year, month, day));
+```
+
+### Why
+
+Uniqueness constraints like `@@unique([metricId, weekOf])` treat midnight UTC and "same day at 6am UTC" as different keys. Without normalization, two writes for the same calendar period create duplicate rows. Symptoms:
+- Scorecard double-counts
+- Recompute fires twice
+- "Did I enter this?" confusion
+- Audit trail shows two simultaneous writes
+
+### Where
+
+Apply at BOTH:
+- **Write time**: API route normalizes the incoming period anchor before upsert.
+- **Read time**: API route normalizes the period anchor in WHERE clauses (otherwise client-side time-of-day drift can miss the constraint match on update).
+
+### Backfill rule (locked 2026-05-17)
+
+When migrating existing period-keyed tables to enforce normalization, **dump conflicts to CSV for manual resolution** rather than auto-merging. Flag-and-skip is the canonical conflict strategy. "Latest createdAt wins" / "sum the values" / "latest updatedAt wins" are all wrong defaults — duplicate-period rows usually have a real business reason for diverging (someone entered data twice with different intent), and silent merge loses information.
+
+Backfill script shape:
+
+```ts
+// Pseudocode
+for (const conflicts of findDuplicatePeriodRows()) {
+  if (conflicts.length === 1) {
+    // Normalize timestamp in-place, no merge needed
+    await db.entry.update({ where: { id: conflicts[0].id }, data: { weekOf: normalize(conflicts[0].weekOf) } });
+  } else {
+    // Dump to conflicts.csv with all field values + IDs; do NOT modify
+    writeConflictRow(conflicts);
+  }
+}
+```
+
+After the script runs, the dev team reviews `conflicts.csv` and resolves each manually — typically choosing the correct value per entry or merging values intentionally.
+
+### Apply to which entities
+
+Any entity with a unique constraint anchored on a period timestamp. Today (post v3): `MetricEntry(metricId, weekOf)`. Future candidates: GGOB monthly actuals, quarterly Rock targets, any per-month-per-team forecasting tables.
+
+If you're adding a new period-keyed entity, normalize from day one. The backfill rule only applies when retrofitting existing pre-canon data.
+
 ## Related canon
 
 - `reference_shared_components.md` — full primitives roster
