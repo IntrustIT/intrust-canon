@@ -46,25 +46,42 @@ The earlier three-axis model (Attention / My Work / Triage) bifurcated user-capt
 
 An item can appear on both axes simultaneously. Off-track rocks render on Attention (with red `past_due` urgency) AND remain on My Work (with the rock's natural state). The Attention surfacing is the **surveillance overlay** — dismissing it removes the alert but does not remove the item from My Work. This is the correct mental model: Attention is "needs eyes," My Work is "you own this," and the same item can need eyes while you own it.
 
+## Axis labels (app-specific, NOT canon-mandated)
+
+Canon mandates the structure (two-axis, surveillance overlay + ownership ledger, urgency-ranked, source-agnostic) and the primitives (CalloutCard, urgency-colors, TabCountBadge). Canon does NOT mandate the literal axis labels — each app picks labels that fit its content vocabulary.
+
+- **OS** chose **"My Radar"** + **"My Work"** (2026-05-18 dashboard canon sweep).
+- **Playbook** chooses labels that fit learning content; TBD when its dashboard ships.
+- **Future apps** inherit the structure + primitives; pick their own labels.
+
+Long-range note: a single cross-app dashboard (Model C — one dashboard per user aggregating from all installed apps) is a possible future direction. If/when that lands, axis labels would consolidate at that point. Until then, per-app labels are valid.
+
 ## Layout
 
 ```
 H1 + subtitle
-Tab bar: [Attention (N) | My Work (M)]   (optional: [Triage filter chip inside Attention])
+Tab bar: [<axis-1-label> (N) | <axis-2-label> (M)]
 ↓
-[Attention tab]
-  <CalloutCard tone="info" title="Needs Your Attention">
+[Attention-axis tab]
+  <CalloutCard tone="info" title?="Needs Attention">     // see "Primary CalloutCard title" below
     {urgency-ranked rows}
   </CalloutCard>
   <CalloutCard tone="ai"> {optional AI insights} </CalloutCard>
-  <CalloutCard> {optional Breaking News / FYI / Recently Triaged} </CalloutCard>
+  <CalloutCard> {optional Breaking News / FYI} </CalloutCard>
 
-[My Work tab]
-  Card grid: My Todos · My Rocks · My Issues · My Metrics
+[Work-axis tab]
+  Card grid: my-owned entities by type
   Each card is a compact list with click-to-open editors.
 ```
 
 Tab counts use `<TabCountBadge>` per `reference_tab_count_badge.md`.
+
+## Primary CalloutCard title rule
+
+- **Multiple callouts on the tab** (primary attention card + Breaking News + AI insights + etc.) → primary card gets a `title` prop ("Needs Attention" or app's equivalent) to be visually parallel to the siblings.
+- **Only one callout on the tab** → primary card renders title-less (the tab label IS the title; titling would be redundant).
+
+Test: count callouts visible on the tab at typical user-data density. ≥2 callouts → title the primary. =1 callout → drop the title.
 
 ## Affordances on Attention rows
 

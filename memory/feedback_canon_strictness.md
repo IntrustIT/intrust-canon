@@ -58,3 +58,21 @@ components, modals, popovers, toasts, tooltips, buttons, switches,
 chips, badges, copy, and any new primitive. It does not require a
 sweep when fixing a one-line bug inside an existing pattern (the
 pattern is already settled).
+
+## Required preflight — Plan-vs-Canon Conflict Check (added 2026-05-18)
+
+After listing the canon docs read and before code, the preflight MUST include an explicit **Plan-vs-Canon Conflict Check** step:
+
+> Walk each bullet in the plan against the cited canon docs. For each bullet, name the docs that apply and assert whether the planned shape matches. If any tension exists, flag it and resolve in the plan (or ASK if it's a deviation that needs approval). End with "no conflicts found" only when every plan bullet has been audited.
+
+**Why this is required:** listing docs and APPLYING their constraints are two different acts. A session can read `reference_editor_footer_verbs.md` (which says single-row footer with `[Cancel] [Primary]`) and then write a plan describing a two-tier footer with an override row below — the conflict is right there in the plan but neither the session nor the reviewer catches it unless they do the audit explicitly.
+
+**Concrete failure (2026-05-18):** capture-flow retrofit preflight cited `reference_editor_footer_verbs.md` AND described an "override row" beneath the canonical footer. Both session and canon-master missed the conflict during preflight review; the off-canon two-tier footer shipped and had to be reworked in a follow-up commit.
+
+**How to apply:**
+- Add a "Plan-vs-Canon Conflict Check" section to the preflight, AFTER the plan section, BEFORE the hard-stop.
+- Format: for each plan bullet, one line stating which canon doc(s) it touches and the result (`OK` / `tension: <description> — resolution: <action>` / `deviation requires Ricky-approval`).
+- Empty plan bullets (housekeeping, build verification, etc.) don't need an entry.
+- If the check surfaces a tension you can resolve without changing the user-visible shape, resolve it in the plan and proceed. If the resolution requires a user-visible deviation from canon, ASK before the hard-stop.
+
+**Reviewer responsibility (canon-master):** when approving a preflight, scan the Plan-vs-Canon Conflict Check section explicitly. Don't rubber-stamp. If it's missing or shallow, ask the session to add it.
