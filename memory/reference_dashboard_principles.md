@@ -87,6 +87,22 @@ Test: count callouts visible on the tab at typical user-data density. ≥2 callo
 
 Per `feedback_always_visible_affordances.md`: snooze menu, dismiss-X, and open-handler are always-visible at low weight. Right-click context menu offers the full entity action set (per `reference_entity_action_set.md`). Clicking the row opens the entity's stacked editor per `reference_stacked_editor_pattern.md` (no page navigation).
 
+## Band-0 action cluster — dashboard exception (added 2026-05-21)
+
+`reference_hub_page.md` §1 says "no action cluster at the Band 0 level" — written for typical list-page hubs (VTO Vision/Traction/SWOT) where tabs are alternate views of the SAME parent entity. Dashboard is a different shape:
+
+- **Typical hub:** tabs are alternate views of one parent record (VTO has Vision/Traction/SWOT). Each tab has its OWN content + its own per-tab actions.
+- **Multi-axis personal hub (dashboard):** tabs are different RELATIONSHIPS to the ENTIRE entity set (Attention axis = surveillance; Work axis = ownership). Tabs share the same underlying entity universe, just lensed differently.
+
+In the multi-axis case, **the action cluster is legitimately global**:
+- `+ Add` creates an entity that's relevant to the user regardless of which tab they're on. Pushing it into per-tab Band 1 forces either duplication (same button on both tabs) or arbitrary scoping (only on Work? wrong — user wants to create from Radar too).
+- `Refresh` reloads the underlying data shared across both tabs.
+- The cluster belongs in Band 0 alongside the H1, shared by both tabs.
+
+**The rule:** if a hub has tabs that represent different RELATIONSHIPS to the same entity universe (rather than alternate views of one parent), it qualifies as a multi-axis personal hub and renders its action cluster in Band 0. Cite OS dashboard as the canonical example.
+
+Cross-reference: `reference_hub_page.md` §1 carries a note pointing to this exception.
+
 ## What NOT to do
 
 - Don't add a "What's New" or "Recent Activity" tab as a peer to Attention — recent activity belongs INSIDE Attention (as an FYI sub-card) or on a per-entity activity-log page.

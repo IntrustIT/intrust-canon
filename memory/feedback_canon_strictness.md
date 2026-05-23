@@ -59,6 +59,24 @@ chips, badges, copy, and any new primitive. It does not require a
 sweep when fixing a one-line bug inside an existing pattern (the
 pattern is already settled).
 
+## Required preflight — Primitive-grep first (added 2026-05-21)
+
+BEFORE citing any canon doc as a pilot in the preflight, run a `grep` on the actual codebase to confirm the matching primitive exists. Then cite the canon doc that describes the primitive you found.
+
+**Why this is required:** The Plan-vs-Canon Conflict Check (below) only catches drift IF the cited canon doc is actually the right analog for the work. Citing canon docs by name-similarity intuition routinely picks the wrong analog — and the conflict check then rubber-stamps a wrong-shape implementation because it audits against the wrong canon.
+
+**Concrete failures (2026-05-18, capture-flow rebuild):**
+- `reference_issue_type_spectrum.md` was cited as the pilot for a panel-scale interactive picker. The doc describes a tiny read-only inline badge. Wrong analog. Two iterations of off-canon work shipped before the right primitive (`CreateTypeSwitcher`) was found by grep.
+- `<AISuggestField>` (the actual canon for AI-content suggestions) was missed entirely. A bespoke "💡 italic gray" AI-reasoning treatment was built from scratch. Third iteration to correct.
+
+**How to apply:**
+- For each plan bullet that proposes touching a primitive or pattern, FIRST run a grep on `components/` + `lib/` for likely primitive names (`grep -rln "CreateType\|AISuggest\|TypeSwitcher\|EntityType\|<TheThing>" components/ lib/`).
+- Use the matched primitive's filename to find the canon doc that describes it. Cite THAT doc in section 1 of the preflight.
+- If grep returns zero hits, you're either building a new primitive (canon-extension — flag for Ricky-approval) OR you've grepped the wrong term. Try synonyms. Only after both fail should you proceed without a citable primitive.
+- Document the grep + match in section 3 (Scaffold-from-pilot source): cite the matched component's `file:line` range.
+
+**Anti-pattern to avoid:** reverse-citing by pattern-matching on doc names ("this picker is like the Issue Type spectrum"). Doc names describe canon decisions, not primitive shapes. The map between "what you need" and "the right canon doc" goes through the codebase, not the doc titles.
+
 ## Required preflight — Plan-vs-Canon Conflict Check (added 2026-05-18)
 
 After listing the canon docs read and before code, the preflight MUST include an explicit **Plan-vs-Canon Conflict Check** step:

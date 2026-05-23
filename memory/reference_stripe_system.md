@@ -170,6 +170,7 @@ The convention — both apps' globals.css get a block like:
   --color-stripe-todo:     #22C55E;
   --color-stripe-rock:     #6366F1;
   --color-stripe-headline: #F59E0B;
+  --color-stripe-capture:  #94A3B8;  /* slate-400 — matches "awaiting decision" urgency tone */
   /* Milestone shares --color-stripe-rock — depth-2 inherits parent */
 
   /* Playbook entity stripes */
