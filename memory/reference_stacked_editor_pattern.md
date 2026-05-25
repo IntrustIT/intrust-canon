@@ -153,7 +153,67 @@ UI cue: each stacked panel sits slightly inset from the one underneath (canonica
 
 ---
 
-## 5. Off-canon behaviors to fix
+## 5. CreateTypeSwitcher — type-flip is in-place (v0.5.7)
+
+When the user is in a create-mode editor and clicks a different type pill in the `<CreateTypeSwitcher>` (e.g. they opened "Add To-Do" but realize it's an Issue), the editor swaps the target entity-type **in place** with the in-flight draft preserved. The URL never changes. No `router.push`, no `window.open`, no navigation of any kind. Mirrors the spawn rule above for related-entity creation.
+
+### Locked rules
+
+- **`onSwitchType` is REQUIRED** on every create-mode editor mount (TodoDetailEditor / IssueDetailEditor / RockDetailEditor / HeadlineDetailEditor). No optional prop, no fallback. The TS prop type enforces this. The legacy `router.push` fallback inside `<CreateTypeSwitcher>` was removed in OS PR #7 (2026-05-24).
+- **Type-flip MUST be in-place.** Parent re-mounts the target editor with the draft preserved.
+- **Draft preservation contract:** `{ type: target, prefill: { title?, description?, notes? } }`. The To-Do `notes` field maps from the Issue/Rock/Headline `description` field (and vice versa) — both fields carry the same user intent in their respective entities.
+
+### Two canonical handler shapes (both valid)
+
+The underlying contract is identical — `{ type, prefill }` re-mount with draft preserved, URL unchanged. EntitySpawnStack is sugar, not a requirement; pages choose the shape that matches their existing state model.
+
+**Pattern X — in-component state swap.** Page owns `createPending` + `createPrefill` state directly:
+
+```tsx
+onSwitchType={(target, draft) => {
+  setCreatePrefill({
+    title: draft.title,
+    ...(target === "todo" ? { notes: draft.description } : { description: draft.description }),
+  });
+  setCreatePending(target);
+}}
+```
+
+Use when the page mounts create-mode editors directly and doesn't otherwise need EntitySpawnStack. Canonical exemplar: `app/dashboard/page.tsx` (5 create-mounts including `createIssueFromPrep`).
+
+**Pattern Y — close-then-spawnPending via EntitySpawnStack.** Handler routes the draft through an existing spawn-stack:
+
+```tsx
+onSwitchType={(target, draft) => {
+  setCreatingItem(null); // close current create panel
+  setSpawnPending({
+    type: target,
+    prefill: { title: draft.title, ...(target === "todo" ? { notes: draft.description } : { description: draft.description }) },
+  });
+}}
+```
+
+Use when the page already needs spawn-from-existing capability and has `<EntitySpawnStack>` mounted. Canonical exemplars: `app/todos/page.tsx`, `app/issues/page.tsx`, `app/rocks/page.tsx`, `app/headlines/page.tsx`, `app/meetings/[id]/page.tsx`.
+
+**Capture flow (special case):** `flipCaptureType` preserves the `captureContextWithDraft` sidecar (CalloutCard reasoning + raw-text quote + AI metadata + capture-id) across the type-flip in addition to the regular draft. Same in-place contract.
+
+### Pill chrome — entity emoji + colored bar
+
+`<CreateTypeSwitcher>` pills render the canonical entity emoji per `reference_icon_vocabulary.md` (✅ todo, ⏱ issue, 🪨 rock, 📢 headline) alongside the entity-stripe colored bar. The colored bar carries `reference_stripe_system.md` semantics; the emoji carries entity-identity semantics. Both are canonical — not redundant. Pill markup shape (locked 2026-05-24):
+
+```tsx
+<button>
+  <span className="inline-block w-1 h-3 rounded-full" style={{ background: STRIPE_COLOR[t] }} />
+  <span aria-hidden>{EMOJI[t]}</span>
+  {LABELS[t]}
+</button>
+```
+
+`aria-hidden` keeps the emoji out of the screen-reader stream — the label carries the accessible name.
+
+---
+
+## 6. Off-canon behaviors to fix
 
 - **Headlines** spawn-follow-up uses `window.open` (opens a new browser tab). Off-canon. Should use stacking like every other entity. Currently in `app/headlines/page.tsx:879-921`.
 - **Idea Pipeline** writes the spawned entity immediately and emits a toast with a link instead of stacking. Documented exception — Idea is a lightweight surface and the spawn is the conversion.

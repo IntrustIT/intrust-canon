@@ -1,6 +1,6 @@
 ---
 name: Icon library canon
-description: Three icon families with strict scope. Lucide for UI/action AND entity icons. Unicode for low-noise affordances (⠿ drag handle, Σ subtotal). Emoji ONLY for decorative legacy contexts — entity icons go through Lucide per `reference_icon_vocabulary.md` (session-47 retirement). Never roll your own SVG except as a last resort.
+description: Three icon families with strict scope. Lucide for UI/action icons. Unicode for low-noise affordances (⠿ drag handle, Σ subtotal). Emoji for entity icons (⏱⚡🔭 issue, ✅ todo, 🪨 rock, 🏆/📢 headline) per `reference_icon_vocabulary.md`. Never roll your own SVG except as a last resort.
 type: reference
 ---
 

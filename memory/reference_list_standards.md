@@ -55,6 +55,33 @@ When BOTH paths are present (e.g. an app that lets users toggle list ↔ compact
 
 **OS today (off-canon):** `app/issues/page.tsx:1104-1115` ships a Sort by section in View ▾ alongside `<SortHeader>` Priority + Age columns. The Sort by section is redundant on list view; should be removed for list view, kept for compact view. Tracked on #565.
 
+### Card-hosted sort-headers — tone inherits host (v0.5.7)
+
+When a sort-header strip is hosted INSIDE a card (e.g. dashboard My Work cards, not a full list page), the **structural shape stays canonical** (`flex items-center gap-3 px-3 py-1.5 border-y text-[10px]` + `<SortHeader>` components) but the **palette inherits from the host card's tone**:
+
+| Host card | Header band bg | Header band borders |
+|---|---|---|
+| White sibling card (`bg-white border-2 border-gray-200`) | `bg-gray-50/50` | `border-gray-200` |
+| `<CalloutCard tone="warn">` (amber) | `bg-amber-50/50` | `border-amber-200` |
+| `<CalloutCard tone="info">` (blue) | `bg-blue-50/50` | `border-blue-200` |
+| `<CalloutCard tone="ai">` (orange) | `bg-orange-50/50` | `border-orange-200` |
+
+Gray-on-amber (or gray-on-blue) reads as broken. Structural canon governs shape; host primitive governs palette. Canonical exemplars: dashboard My To-Dos / My Rocks / My Issues (white-host) and Incoming Deliverables to Me (CalloutCard tone="warn", amber-host) — both shipped 2026-05-24 in PR #7.
+
+### Done-toggle position-hold — never auto-sort to bottom on toggle (v0.5.7)
+
+When a user clicks a `<RowStateCircle>` (or any completion-toggle affordance) to mark a row done — or un-done — the row STAYS in its current visual position under the active sort. **Re-sort fires ONLY when the user explicitly invokes a sort:** column-header click, View ▾ sort change, page reload.
+
+**Why:** yanking a row out from under the user's eye on toggle is jarring and loses context — they were looking at THIS row, now it's gone from where they were. Position-hold means the toggle confirms their action without breaking their place in the list.
+
+**Implementation pattern** — two surfaces this typically applies on:
+
+1. **List pages with no completed-filter** (e.g. `/todos` pilot). Position-hold is *implicit*: no comparator includes `completed`, no filter drops completed rows. Toggling a row doesn't change its sort position, doesn't remove it from view — done.
+
+2. **Cards / pages that filter completed out by default** (e.g. dashboard My To-Dos with "Include Done" off). Position-hold needs an *explicit opt-out*: a `recentlyToggled: Set<id>` that the filter respects (`if (row.completed && !recentlyToggled.has(row.id)) return false;`). Cleared on explicit re-sort + on page reload (`loadData()`).
+
+Applies app-wide: every list page (`/todos`, `/issues`, `/rocks`, `/headlines`, `/meetings` deliverables) + every dashboard card with a done-toggle (My To-Dos, My Rocks, My Issues, Deliverables, captures). `/todos` is the implicit-pattern pilot; dashboard My To-Dos (shipped 2026-05-24 via punchlist #883 in PR #7) is the explicit-opt-out pilot.
+
 **Sticky top section.** Bands 1-4 are **sticky to the viewport top** so filters / search / Add / state tabs / column headers stay reachable regardless of scroll position. Status (session 49 commits `d80728c` + `f68929a`): Bands 1-3 sticky on all 5 list pages; Band 4 sticky on /issues + /todos + /headlines + /rocks (list view). /rocks list view used to host its column header inside the `ListView` sub-component with a local `useTableSort`; both the hook and the `STATUS_ORDER` constant were hoisted to `RocksPage` / module scope respectively, with `tableSort` threaded back into `ListView` as a prop. /rocks milestone-class views (milestones, gantt, planner) still use per-group card-wrapped headers — separate refactor when those need sticky. /meetings has no Band 4 strip (table layout).
 
 ```tsx
