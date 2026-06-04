@@ -213,6 +213,20 @@ Use when the page already needs spawn-from-existing capability and has `<EntityS
 
 ---
 
+## 5b. Pre-filled LINK only on spawn-from-entity; generic "+ Add" carries scope, never a link (v0.6.0)
+
+A pre-filled entity **link** (`parentType` / `parentId` in the prefill, which writes a real `/api/links` row on save) belongs ONLY to the spawn flow above — when the user creates *from* a specific parent entity (the "+ Linked X" buttons, right-click "Spawn follow-up"). There the parent IS the context and the link is the point.
+
+A **generic "+ Add X" button** — even one living inside a meeting, a section, or any container — is a **standalone create**. It may pre-fill ambient **scope** (team, owner) but MUST NOT inject `parentType`/`parentId`, because there's no parent entity the user launched *from*. Forging a link there creates a meaningless relationship.
+
+**Canonical exposer — "meeting":** a meeting is not an entity a rock/todo belongs to. The meeting-runner "+ Rock" / "+ Add Rock" buttons were injecting `parentType:"meeting"` into a generic create, which (a) forged a never-read `meeting→rock` link and (b) surfaced a phantom "IDEA · Loading…" pending-link preview (the editor couldn't render a `meeting` parent). Fixed in PR #16/#17 — rock-create-in-meeting now carries team(+owner) scope only, no link.
+
+**Test:** "did the user open this create *from* a specific entity's action menu?" Yes → spawn, pre-fill the link. No (a generic + button) → standalone, scope-only, no link.
+
+Note: the meeting +Todo / +Issue create paths still pass `parentType:"meeting"` — that's a *deliberately deferred* decision (the Conclude redesign, punchlist #903, weighs whether "generated this meeting" should be an entity link or activity-log provenance). Rocks were removed from the pattern because a rock is never an artifact of one meeting instance; the todo/issue call is open.
+
+---
+
 ## 6. Off-canon behaviors to fix
 
 - **Headlines** spawn-follow-up uses `window.open` (opens a new browser tab). Off-canon. Should use stacking like every other entity. Currently in `app/headlines/page.tsx:879-921`.

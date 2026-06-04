@@ -127,6 +127,14 @@ Any entity with a unique constraint anchored on a period timestamp. Today (post 
 
 If you're adding a new period-keyed entity, normalize from day one. The backfill rule only applies when retrofitting existing pre-canon data.
 
+## Timed-event entities — date + time + timezone (v0.6.0)
+
+`formatDueDate` is for **deadline dates** — entities that are due ON a day (todos, rocks, milestones). It renders date-level only and deliberately drops time-of-day. A **timed event** (a meeting, a future calendar item) is different: the time and timezone are essential, not noise. Intrust operates across Cincinnati + Nashville and people span timezones (Ricky works MST), so a meeting that says only "May 26 (today)" is ambiguous.
+
+For timed events use **`formatEventDateTime(date, tz)`** (or `formatEventDate(date, { includeTime: true })`): render the canonical relative-delta framing **plus** ` at {time} {tz}` — e.g. `Tue, May 26 · 4:12 PM ET`. Timezone abbreviation is **non-negotiable** for event entities (Ricky-approved 2026-05-26). The meetings-list hybrid (date + time + tz) is the reference implementation.
+
+**Rule:** deadline dates → `formatDueDate` (date-level, suffix). Timed events (meetings, calendar items) → the event-datetime helper (date + time + tz). Don't render a meeting time with `formatDueDate` (drops the time) and don't roll a one-off `toLocaleString`.
+
 ## Related canon
 
 - `reference_shared_components.md` — full primitives roster

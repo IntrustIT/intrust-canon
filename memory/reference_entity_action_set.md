@@ -188,6 +188,21 @@ Dividers between groups.
 
 ---
 
+## 6. Metric action parity (v0.6.0)
+
+Every entity-type action builder MUST expose the **Flag-on-Attention + the `+ Linked To-Do/Issue/Headline` spawn cluster** unless the entity has a *documented* reason to lack them. `buildMetricActions` was historically lean (Open / Ask Rickety / Archive / Delete) while the sibling builders all carried flag + spawn — that asymmetry is drift, not design. Metrics get parity. Documented carve-outs only (e.g. captures retire their parent on flip — a different lifecycle). (Punchlist #891.)
+
+## 7. Per-surface action filtering (v0.6.0)
+
+The canonical builder output is FILTERED per surface — one source of truth, each surface subtracts what doesn't belong:
+
+- **Inside-editor kebab** drops `Open Details` + `Ask Rickety` (§2, established).
+- **Watch surfaces** (dashboard rows — My Radar Attention / Breaking News / Numbers to Watch / Mini-Games, and My Work cards) drop **`Archive` + `Delete`**. The dashboard is a *view of* entities, not the entity-owning surface; structural/destructive mutation belongs on the owning page (/todos, /issues, /rocks, /scorecard, /headlines). **Kept on watch surfaces:** Open Details · Ask Rickety · Flag/Unflag · spawn cluster · in-place status toggles (Mark Resolved, Mark Complete) — navigate + triage actions. **Exception — captures:** My Radar IS the capture's owning surface, so `Archive` (= dismiss the triage item) stays on `buildCaptureActions`. (Punchlist #898.)
+
+Both are instances of one pattern: **canonical builder → per-surface filter** (e.g. `withoutWatchSurfaceActions(items)`), never a per-surface hand-rolled action list.
+
+---
+
 ## See also
 
 - [`reference_icon_vocabulary.md`](reference_icon_vocabulary.md) — canonical glyphs for action icons.

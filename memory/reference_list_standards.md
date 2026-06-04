@@ -536,6 +536,23 @@ return (
 
 Reference impls: `components/SoiPlanEditor.tsx`, `app/ggob/page.tsx` ("Forecast and Plan Details" header). NB: `app/scorecard/page.tsx:1620-1636` still uses the older `+ / −` pair; sweep to single chevron when next touched.
 
+#### Master-chevron placement + scope (v0.6.0)
+
+When a surface has nested collapsibles, the expand/collapse-all (master) chevron has two locked rules:
+
+1. **Placement — outboard-left of the chevrons it governs, one indent step per hierarchy level.** The master chevron heads the chevron column; it never sits among unrelated controls (e.g. a filter/toggle row). The standalone /scorecard nesting is the canonical example: `⌄ Measurable` (table header, leftmost) → `⌄ GROUP` (indented one step) → `⌄ Sub-group` (another step). Token-matching the classes is NOT sufficient — match the *rendered* indent of the standalone element-for-element.
+2. **Scope follows position.** A master chevron governs exactly the subtree beneath its row: a table-header chevron = the whole board; a group-title-row chevron = that group only. (Re-litigated three times in the scorecard-collapse PR before this was written down — meeting-runner Scorecard Review puts the master chevron on the group-title row → current-group scope, while the board-wide bulk control lives separately in the cadence FilterToggle switches.)
+
+## Meeting-runner content sections — clone the standalone, subtract by exception (v0.6.0)
+
+Every meeting-runner content section (Scorecard Review, Rock Review, To-Do Review, Headlines, IDS) is the **same look + behavior as its standalone page** (`/scorecard`, `/rocks`, `/todos`, `/headlines`, `/issues`) — this is the operational form of "inside a meeting must look + behave the same as outside" (punchlist #624).
+
+**Default = clone, not approximate.** A runner section reuses the standalone's *actual structure* — control band (View ▾ / Filters / Find+search), row template, group headers, kebab vocabulary + labels, empty states, sort — VERBATIM. Token-matching ("same classes") is insufficient and has repeatedly drifted; match the standalone **element-for-element** at the same viewport.
+
+**Deviations are allowed only when explicitly locked + logged.** The only legitimate differences are meeting-specific affordances: in-section focused actions (flag, solve, mark-discussed, drag-reorder, check-off), the cadence sub-sections + board-wide cadence toggles (Scorecard), collapse-to-TOC, ActiveIndicator, an "Include other teams" capacity toggle (Rock Review). Each deviation is recorded as `DEVIATION: <x> — <reason>` in the section's design record. Anything not on that list must match the standalone.
+
+**Preflight gate — standalone-parity checklist.** Every runner-section preflight MUST enumerate each standalone chrome element and mark it *match* / *documented-deviation*, so basic-layout drift can't ship silently. **The checklist covers core INTERACTIONS, not just layout** — the final verification of each section (and after EVERY correction pass, not once) explicitly walks: (a) open the detail editor from a row, (b) check-off / complete the entity, (c) save an edit, (d) right-click menu, (e) any section-specific action. Layout-only re-walks are insufficient — they let interaction regressions reach merge.
+
 ## Comment + link counts endpoints
 
 - `GET /api/comments/counts?entities=issue:id1,todo:id2,…` → `{ "<type>:<id>": { total, unread } }` for rows with at least one comment. See `app/api/comments/counts/route.ts`.
